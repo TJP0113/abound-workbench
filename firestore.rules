@@ -1,0 +1,77 @@
+rules_version = '2';
+
+// ABOUND CREATION 工作台 — 资料权限
+// · 只有员工名单（members）上、已启用的 Gmail 能读写
+// · 员工只能看到自己参与的项目和任务
+// · settings/gcal、gcalMap、oauthState 只由服务器读写
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null && request.auth.token.email_verified == true;
+    }
+    // Google 账号的邮箱都是小写；员工名单的文件 ID 也用小写邮箱
+    function myEmail() {
+      return request.auth.token.email;
+    }
+    function me() {
+      return get(/databases/$(database)/documents/members/$(myEmail())).data;
+    }
+    function isMember() {
+      return signedIn() && exists(/databases/$(database)/documents/members/$(myEmail())) && me().active == true;
+    }
+    function isAdmin() {
+      return isMember() && me().role == 'admin';
+    }
+    function onlyChanges(keys) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(keys);
+    }
+
+    match /members/{email} {
+      allow read: if isMember() || (signedIn() && email == myEmail());
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin() || (isMember() && email == myEmail() && onlyChanges(['lang']));
+    }
+
+    match /projects/{id} {
+      allow read: if isAdmin() || (isMember() && myEmail() in resource.data.memberEmails);
+      allow create, delete: if isAdmin();
+      // 参与成员可更新阶段进度、外包记录与备注
+      allow update: if isAdmin()
+        || (isMember() && myEmail() in resource.data.memberEmails
+            && onlyChanges(['services', 'outsourcing', 'notes', 'updatedAt']));
+    }
+
+    match /tasks/{id} {
+      allow read: if isAdmin() || (isMember() && myEmail() in resource.data.memberEmails);
+      allow create, delete: if isAdmin();
+      // 负责员工可更新状态（待开始 / 进行中 / 提交审核）与子任务
+      allow update: if isAdmin()
+        || (isMember() && myEmail() in resource.data.assigneeEmails
+            && onlyChanges(['status', 'subtasks', 'updatedAt'])
+            && request.resource.data.status in ['todo', 'doing', 'review', 'revise']
+            && (request.resource.data.status == resource.data.status || request.resource.data.status in ['todo', 'doing', 'review']));
+    }
+
+    match /events/{id} {
+      allow read, create: if isMember();
+      allow update, delete: if isAdmin() || (isMember() && resource.data.createdBy == myEmail());
+    }
+
+    match /notifications/{id} {
+      allow read: if isMember() && resource.data.toEmail == myEmail();
+      allow create: if isMember() && request.resource.data.fromEmail == myEmail();
+      allow update: if isMember() && resource.data.toEmail == myEmail() && onlyChanges(['read']);
+      allow delete: if isMember() && resource.data.toEmail == myEmail();
+    }
+
+    match /settings/gcalPublic {
+      allow read: if isMember();
+    }
+
+    // 其他（settings/gcal、gcalMap 等）一律只由服务器存取
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
