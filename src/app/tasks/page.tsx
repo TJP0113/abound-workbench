@@ -6,8 +6,8 @@ import { useAuth } from "@/components/AuthProvider";
 import { useData } from "@/components/DataProvider";
 import { TopBar } from "@/components/AppShell";
 import { TaskForm } from "@/components/TaskForm";
-import { TaskActions } from "@/components/TaskBits";
-import { Avatar, Button, DueLabel, Icon, PRIORITY_COLORS, PageHeader, ProgressBar, ServiceTag, TASK_STATUS_COLORS, cx } from "@/components/ui";
+import { TaskActions, TaskKindTag } from "@/components/TaskBits";
+import { Avatar, Button, DueLabel, Icon, PRIORITY_COLORS, PageHeader, ProgressBar, TASK_STATUS_COLORS, cx } from "@/components/ui";
 import { useActions } from "@/lib/actions";
 import { taskTitle } from "@/lib/project-utils";
 import { addDays, todayStr, weekStart } from "@/lib/dates";
@@ -27,14 +27,14 @@ function TaskCard({ task, onOpen, onDragStart }: { task: Task; onOpen: () => voi
       className="bg-white border border-[#E2E2DD] rounded-[10px] p-3.5 flex flex-col gap-2.5 cursor-grab active:cursor-grabbing"
     >
       <div className="flex justify-between items-center gap-2">
-        {task.serviceType ? <ServiceTag type={task.serviceType} /> : <span />}
+        <TaskKindTag task={task} />
         <span className="text-[12px] font-bold" style={{ color: PRIORITY_COLORS[task.priority] }}>
           {t(`pri.${task.priority}`)}
         </span>
       </div>
       <button type="button" onClick={onOpen} className="text-left flex flex-col gap-1 cursor-pointer">
         <h3 className={cx("m-0 text-[14px] font-medium leading-snug", done && "line-through text-muted")}>{taskTitle(task, lang)}</h3>
-        <span className="text-[12px] text-muted">{task.projectName}</span>
+        {task.projectName && <span className="text-[12px] text-muted">{task.projectName}</span>}
       </button>
       {task.status === "revise" && task.reviewNote && (
         <div className="text-[12px] leading-relaxed text-ink-2 bg-[#FCF1F1] rounded-lg px-2.5 py-2">
@@ -63,13 +63,14 @@ function TaskCard({ task, onOpen, onDragStart }: { task: Task; onOpen: () => voi
 }
 
 function TasksInner() {
-  const { t, isAdmin, member } = useAuth();
+  const { t, isAdmin, member, api } = useAuth();
   const { tasks, members } = useData();
   const { setTaskStatus } = useActions();
   const params = useSearchParams();
   const router = useRouter();
   const [who, setWho] = useState<string>(isAdmin ? "all" : "mine");
-  const [form, setForm] = useState<{ task?: Task } | null>(null);
+  const [form, setForm] = useState<{ task?: Task; routine?: boolean } | null>(null);
+  const [kind, setKind] = useState<"all" | "project" | "routine">("all");
   const [dragId, setDragId] = useState<string | null>(null);
   const [showAllDone, setShowAllDone] = useState(false);
   const today = todayStr();
@@ -83,6 +84,8 @@ function TasksInner() {
   }, [params, tasks]);
 
   const filtered = tasks.filter((x) => {
+    if (kind === "routine" && x.kind !== "routine") return false;
+    if (kind === "project" && x.kind === "routine") return false;
     if (who === "all") return true;
     if (who === "mine") return !!member && x.assigneeEmails.includes(member.email);
     return x.assigneeEmails.includes(who);
@@ -103,6 +106,17 @@ function TasksInner() {
     setDragId(null);
     if (!tk || tk.status === status) return;
     const mine = !!member && tk.assigneeEmails.includes(member.email);
+    // 日常事务：不经审核，拖到「已完成」直接完成
+    if (tk.kind === "routine") {
+      if (!isAdmin && !mine) return;
+      if (status === "review" || status === "revise") return;
+      if (status === "done") {
+        await api("/api/routine/complete", { id: tk.id }).catch(() => alert(t("err.permission")));
+        return;
+      }
+      await setTaskStatus(tk, status).catch(() => alert(t("err.permission")));
+      return;
+    }
     // 员工：只能在 待开始 / 进行中 / 待审核 之间移动；打回与批准由管理员操作
     if (!isAdmin && (!mine || !["todo", "doing", "review"].includes(status))) return;
     if (status === "revise") {
@@ -127,6 +141,14 @@ function TasksInner() {
         actions={
           <>
             <label className="flex items-center gap-2 text-[13px] text-muted">
+              {t("task.typeFilter")}
+              <select className="field !w-auto" value={kind} onChange={(e) => setKind(e.target.value as typeof kind)}>
+                <option value="all">{t("common.all")}</option>
+                <option value="project">{t("task.kind.project")}</option>
+                <option value="routine">{t("task.kind.routine")}</option>
+              </select>
+            </label>
+            <label className="flex items-center gap-2 text-[13px] text-muted">
               {t("task.assigneeFilter")}
               <select className="field !w-auto" value={who} onChange={(e) => setWho(e.target.value)}>
                 <option value="all">{t("common.all")}</option>
@@ -141,10 +163,16 @@ function TasksInner() {
             </label>
             <TopBar />
             {isAdmin && (
-              <Button variant="primary" onClick={() => setForm({})}>
-                <Icon name="plus" size={16} />
-                {t("task.new")}
-              </Button>
+              <>
+                <Button onClick={() => setForm({ routine: true })}>
+                  <Icon name="plus" size={16} />
+                  {t("task.newRoutine")}
+                </Button>
+                <Button variant="primary" onClick={() => setForm({})}>
+                  <Icon name="plus" size={16} />
+                  {t("task.new")}
+                </Button>
+              </>
             )}
           </>
         }
@@ -216,7 +244,7 @@ function TasksInner() {
         </div>
       </div>
 
-      {form && <TaskForm open task={form.task} onClose={closeForm} />}
+      {form && <TaskForm open task={form.task} routine={form.routine} onClose={closeForm} />}
     </>
   );
 }

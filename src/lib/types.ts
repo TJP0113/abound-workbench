@@ -81,6 +81,7 @@ export interface Project {
 }
 
 export type TaskStatus = "todo" | "doing" | "review" | "revise" | "done";
+export type Repeat = "none" | "daily" | "weekly" | "monthly";
 export type Priority = "high" | "medium" | "low";
 
 export interface Subtask {
@@ -90,7 +91,10 @@ export interface Subtask {
 
 export interface Task {
   id: string;
-  projectId: string;
+  kind?: "project" | "routine"; // routine = 日常事务，不属于任何项目
+  repeat?: Repeat; // 日常事务的重复周期
+  spawnedNext?: boolean; // 已建立下一次
+  projectId: string; // 日常事务为 ""
   projectName: string;
   serviceType?: ServiceType;
   title: string;

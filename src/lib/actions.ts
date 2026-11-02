@@ -136,8 +136,10 @@ export function useActions() {
         await notify(added, "assigned", { title: patch.title ?? prev.title }, `/tasks?task=${id}`);
       }
       if (patch.due !== undefined || patch.title !== undefined || patch.status !== undefined) requestSync();
+      // 日常事务完成：建立下一次
+      if (prev?.kind === "routine" && patch.status === "done" && prev.status !== "done") api("/api/maintenance").catch(() => {});
     },
-    [notify, requestSync]
+    [notify, requestSync, api]
   );
 
   const setTaskStatus = useCallback(
@@ -149,9 +151,10 @@ export function useActions() {
       if (status === "review") await notify(adminEmails, "submitted", { title: t.title }, link);
       if (status === "revise") await notify(t.assigneeEmails, "rejected", { title: t.title }, link);
       if (status === "done" && t.status === "review") await notify(t.assigneeEmails, "approved", { title: t.title }, link);
+      if (status === "done" && t.kind === "routine") api("/api/maintenance").catch(() => {});
       requestSync();
     },
-    [adminEmails, notify, requestSync]
+    [adminEmails, notify, requestSync, api]
   );
 
   const deleteTask = useCallback(

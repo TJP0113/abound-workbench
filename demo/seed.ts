@@ -42,6 +42,9 @@ if (!seeded) {
   for (let i = 1; i <= 4; i++) task(`s${i}`, { projectId: "p3", projectName: "社交媒体月度合约", serviceType: "social", title: `${M} 贴文 #${i}`, autoTitle: { key: "social.post", vars: { month: M, n: i } }, assigneeEmails: [A], memberEmails: [JP, A], due: d(20), status: i === 1 ? "done" : i === 2 ? "doing" : "todo", cycle: M });
   task("s5", { projectId: "p3", projectName: "社交媒体月度合约", serviceType: "social", title: `${M} 短视频 #1`, autoTitle: { key: "social.video", vars: { month: M, n: 1 } }, assigneeEmails: [A], memberEmails: [JP, A], due: d(20), status: "todo", cycle: M });
 
+  task("r1", { kind: "routine", repeat: "monthly", projectId: "", projectName: "", title: "报账（上月收据）", assigneeEmails: [A], memberEmails: [JP, A], due: d(3), status: "todo" });
+  task("r2", { kind: "routine", repeat: "weekly", projectId: "", projectName: "", title: "打扫工作室", assigneeEmails: [B], memberEmails: [JP, B], due: d(5), status: "todo", priority: "low" });
+
   const E = col("events");
   E.set("e1", { title: "客户会议 · 示例家具", type: "meeting", date: d(1), allDay: false, startTime: "14:00", endTime: "15:00", attendeeEmails: [JP, C], projectId: "p4", createdBy: JP });
   E.set("e2", { title: "产品拍摄 · 示例家具", type: "meeting", date: d(5), endDate: d(6), allDay: true, attendeeEmails: [C], projectId: "p4", createdBy: JP });

@@ -104,7 +104,7 @@ export async function runReminders(): Promise<{ sent: number }> {
     const t = d.data() as Task;
     if (t.status === "done") continue;
     const link = `/tasks?task=${d.id}`;
-    const title = `${t.title} · ${t.projectName}`;
+    const title = t.projectName ? `${t.title} · ${t.projectName}` : t.title;
     if (t.due === tomorrow) {
       await sendNotifs(t.assigneeEmails, "dueSoon", title, link);
       sent++;

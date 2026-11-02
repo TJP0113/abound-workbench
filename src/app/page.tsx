@@ -6,7 +6,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { useData } from "@/components/DataProvider";
 import { TopBar } from "@/components/AppShell";
 import { TaskForm } from "@/components/TaskForm";
-import { TaskActions } from "@/components/TaskBits";
+import { TaskActions, TaskKindTag } from "@/components/TaskBits";
 import { PushBanner } from "@/components/PushCard";
 import { Avatar, Card, DueLabel, EmptyState, Pill, PRIORITY_COLORS, ProgressBar, Segmented, ServiceTag } from "@/components/ui";
 import { EVENT_COLORS, SERVICE_COLORS } from "@/lib/services";
@@ -108,8 +108,8 @@ export default function Dashboard() {
                       {taskTitle(x, lang)}
                     </button>
                     <div className="flex flex-wrap items-center gap-2 text-[12px] text-muted">
-                      {x.serviceType && <ServiceTag type={x.serviceType} />}
-                      <span>{x.projectName}</span>
+                      <TaskKindTag task={x} />
+                      {x.projectName && <span>{x.projectName}</span>}
                     </div>
                     <TaskActions task={x} />
                   </div>
@@ -137,8 +137,8 @@ export default function Dashboard() {
                     <DueLabel date={x.due} className="text-[12px]" />
                   </div>
                   <div className="flex flex-wrap items-center gap-2 text-[12px] text-muted">
-                    {x.serviceType && <ServiceTag type={x.serviceType} />}
-                    <span>{x.projectName}</span>
+                    <TaskKindTag task={x} />
+                    {x.projectName && <span>{x.projectName}</span>}
                   </div>
                   {x.reviewNote && (
                     <div className="text-[13px] text-ink-2 leading-relaxed">

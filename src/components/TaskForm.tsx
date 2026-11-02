@@ -3,11 +3,13 @@
 import { useMemo, useState } from "react";
 import { useAuth } from "./AuthProvider";
 import { useData } from "./DataProvider";
-import { Button, Field, Modal, cx } from "./ui";
+import { Button, Field, Modal, Segmented, cx } from "./ui";
 import { useActions } from "@/lib/actions";
 import { addDays, todayStr, weekStart } from "@/lib/dates";
 import { taskTitle } from "@/lib/project-utils";
-import type { Priority, Subtask, Task, TaskStatus } from "@/lib/types";
+import type { Priority, Repeat, Subtask, Task, TaskStatus } from "@/lib/types";
+
+const REPEATS: Repeat[] = ["none", "daily", "weekly", "monthly"];
 
 const PRIORITIES: Priority[] = ["high", "medium", "low"];
 const STATUSES: TaskStatus[] = ["todo", "doing", "review", "revise", "done"];
@@ -18,11 +20,13 @@ export function TaskForm({
   onClose,
   task,
   projectId,
+  routine,
 }: {
   open: boolean;
   onClose: () => void;
   task?: Task;
   projectId?: string;
+  routine?: boolean; // 默认建立日常事务
 }) {
   const { t, lang, isAdmin, member } = useAuth();
   const { projects, members, tasks } = useData();
@@ -31,6 +35,8 @@ export function TaskForm({
   const openProjects = projects.filter((p) => p.status !== "cancelled" && (p.status !== "done" || p.id === task?.projectId));
 
   const [f, setF] = useState(() => ({
+    kind: (task ? (task.kind === "routine" ? "routine" : "project") : routine || !openProjects.length ? "routine" : "project") as "project" | "routine",
+    repeat: (task?.repeat ?? "none") as Repeat,
     projectId: task?.projectId ?? projectId ?? openProjects[0]?.id ?? "",
     title: task ? taskTitle(task, lang) : "",
     description: task?.description ?? "",
@@ -47,8 +53,12 @@ export function TaskForm({
   const [busy, setBusy] = useState(false);
   const up = (p: Partial<typeof f>) => setF((o) => ({ ...o, ...p }));
 
-  const project = projects.find((p) => p.id === f.projectId);
-  const candidates = members.filter((m) => m.active && (!project || project.memberEmails.includes(m.email)));
+  const isRoutineKind = f.kind === "routine";
+  const project = isRoutineKind ? undefined : projects.find((p) => p.id === f.projectId);
+  const candidates = members.filter((m) => m.active && (isRoutineKind || !project || project.memberEmails.includes(m.email)));
+  // 日常事务：负责人与管理员都看得到
+  const routineMembers = (assignees: string[]) =>
+    Array.from(new Set([...assignees, ...members.filter((m) => m.role === "admin" && m.active).map((m) => m.email)]));
 
   // 分配前看工作量：本周（周一到周日）未完成任务数
   const load = useMemo(() => {
@@ -66,7 +76,7 @@ export function TaskForm({
   const isAssignee = !!task && !!member && task.assigneeEmails.includes(member.email);
 
   const save = async () => {
-    if (canEditAll && (!f.title.trim() || !f.projectId || !f.due)) {
+    if (canEditAll && (!f.title.trim() || (!isRoutineKind && !f.projectId) || !f.due)) {
       setError(t("common.required"));
       return;
     }
@@ -80,9 +90,13 @@ export function TaskForm({
         await updateTask(
           task.id,
           {
-            projectId: f.projectId,
-            projectName: project?.name ?? task.projectName,
-            memberEmails: project?.memberEmails ?? task.memberEmails,
+            ...(isRoutineKind
+              ? { projectId: "", projectName: "", memberEmails: routineMembers(f.assigneeEmails), repeat: f.repeat, kind: "routine" as const }
+              : {
+                  projectId: f.projectId,
+                  projectName: project?.name ?? task.projectName,
+                  memberEmails: project?.memberEmails ?? task.memberEmails,
+                }),
             title: f.title.trim(),
             description: f.description,
             assigneeEmails: f.assigneeEmails,
@@ -101,8 +115,25 @@ export function TaskForm({
           const { db } = await import("@/lib/firebase");
           await updateDoc(doc(db(), "tasks", task.id), { autoTitle: deleteField() });
         }
+      } else if (isRoutineKind) {
+        await createTask({
+          kind: "routine",
+          repeat: f.repeat,
+          projectId: "",
+          projectName: "",
+          memberEmails: routineMembers(f.assigneeEmails),
+          title: f.title.trim(),
+          description: f.description,
+          assigneeEmails: f.assigneeEmails,
+          due: f.due,
+          priority: f.priority,
+          status: "todo",
+          subtasks: f.subtasks,
+          note: f.note,
+        });
       } else {
         await createTask({
+          kind: "project",
           projectId: f.projectId,
           projectName: project?.name ?? "",
           serviceType: project?.services[0]?.type,
@@ -132,14 +163,6 @@ export function TaskForm({
     onClose();
   };
 
-  if (!openProjects.length && !task) {
-    return (
-      <Modal open={open} onClose={onClose} title={t("task.new")}>
-        <p className="text-[14px] text-muted m-0">{t("task.noProjects")}</p>
-      </Modal>
-    );
-  }
-
   const ro = !canEditAll;
 
   return (
@@ -166,6 +189,30 @@ export function TaskForm({
     >
       {canEditAll && (
         <>
+          {!task && (
+            <Segmented
+              label={t("task.kind")}
+              value={f.kind}
+              onChange={(k) => up({ kind: k, assigneeEmails: [] })}
+              options={[
+                { value: "project", label: t("task.kind.project") },
+                { value: "routine", label: t("task.kind.routine") },
+              ]}
+            />
+          )}
+          {isRoutineKind ? (
+            <Field label={t("task.repeat")} hint={t("task.repeatHint")}>
+              <select className="field" value={f.repeat} onChange={(e) => up({ repeat: e.target.value as Repeat })}>
+                {REPEATS.map((r) => (
+                  <option key={r} value={r}>
+                    {t(`repeat.${r}`)}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          ) : !openProjects.length ? (
+            <p className="m-0 text-[13px] text-muted">{t("task.noProjects")}</p>
+          ) : (
           <Field label={t("task.project")} required>
             <select
               className="field"
@@ -183,6 +230,7 @@ export function TaskForm({
               ))}
             </select>
           </Field>
+          )}
           <Field label={t("task.name")} required>
             <input className="field" value={f.title} onChange={(e) => up({ title: e.target.value })} />
           </Field>
@@ -205,7 +253,7 @@ export function TaskForm({
             {task && (
               <Field label={t("proj.status")}>
                 <select className="field" value={f.status} onChange={(e) => up({ status: e.target.value as TaskStatus })}>
-                  {STATUSES.map((s) => (
+                  {STATUSES.filter((s) => !isRoutineKind || (s !== "review" && s !== "revise")).map((s) => (
                     <option key={s} value={s}>
                       {t(s === "done" ? "status.taskDone" : `status.${s}`)}
                     </option>

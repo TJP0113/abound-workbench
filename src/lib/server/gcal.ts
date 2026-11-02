@@ -149,7 +149,7 @@ async function buildDesired(): Promise<Desired[]> {
     out.push(
       bodyFor(
         `t_${d.id}`,
-        `截止 · ${t.title} · ${t.projectName}`,
+        t.projectName ? `截止 · ${t.title} · ${t.projectName}` : `截止 · ${t.title}`,
         "deadline",
         allDay(t.due),
         `负责人：${nm(t.assigneeEmails)}\n${link(`/tasks?task=${d.id}`)}`
