@@ -5,8 +5,9 @@ import { SIZES, sheetDate, totalQty, type OrderForm, type PrintSpot } from "@/li
 import { useOrderImage } from "@/lib/orderform-store";
 
 // 版面只用行内样式与十六进制颜色，确保导出 PDF 时与画面一致
-export const SHEET_W = 1123; // A4 横向（96dpi）
+export const SHEET_W = 1123; // A4 横向（96dpi）：297 × 210 mm
 export const SHEET_H = 794;
+export const SHEET_MARGIN = 38; // 约 10mm 留白，印刷时不会被裁到
 
 const BLACK = "#111111";
 const LINE = `2px solid ${BLACK}`;
@@ -32,10 +33,10 @@ function Cell({ children, style }: { children: ReactNode; style?: CSSProperties 
 function Header({ f }: { f: OrderForm }) {
   return (
     <>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", height: 84, padding: "0 18px" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", height: 70, padding: "0 4px 10px" }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/logo-on-light.png" alt="ABOUND CREATION" style={{ height: 52, width: "auto" }} />
-        <div style={{ fontSize: 40, fontWeight: 800, letterSpacing: 0.5, color: BLACK }}>ORDER FORM</div>
+        <img src="/logo-on-light.png" alt="ABOUND CREATION" style={{ height: 48, width: "auto" }} />
+        <div style={{ fontSize: 36, fontWeight: 800, letterSpacing: 0.5, color: BLACK }}>ORDER FORM</div>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "30% 30% 20% 20%", borderTop: LINE, borderBottom: LINE, height: 34 }}>
         <Cell style={{ borderRight: LINE }}>
@@ -59,16 +60,22 @@ function Header({ f }: { f: OrderForm }) {
   );
 }
 
-function SheetImage({ id, height }: { id?: string; height: number }) {
+/** 图片：在可用空间内等比例缩放（不会超出页面） */
+function SheetImage({ id }: { id?: string }) {
   const src = useOrderImage(id);
-  if (!src) return <div style={{ height }} />;
-  // eslint-disable-next-line @next/next/no-img-element
-  return <img src={src} alt="" style={{ maxWidth: "100%", maxHeight: height, objectFit: "contain", display: "block", margin: "0 auto" }} />;
+  return (
+    <div style={{ position: "relative", width: "100%", height: "100%", minHeight: 0 }}>
+      {src && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={src} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", objectPosition: "center top" }} />
+      )}
+    </div>
+  );
 }
 
 function SpotBlock({ spot }: { spot: PrintSpot }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", marginBottom: 14 }}>
+    <div style={{ display: "flex", flexDirection: "column", marginBottom: 10 }}>
       <div style={{ ...lbl, padding: "4px 4px 2px" }}>PRINT METHOD :</div>
       <div style={{ ...val, padding: "2px 10px 4px", borderBottom: THIN }}>{spot.method}</div>
       <Row label="COLOUR" value={spot.colour} valueStyle={{ textAlign: "left" }} />
@@ -81,19 +88,19 @@ function SpotBlock({ spot }: { spot: PrintSpot }) {
 function Side({ title, spots, imageId, last }: { title: string; spots: PrintSpot[]; imageId?: string; last?: boolean }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", borderRight: last ? "none" : LINE, minHeight: 0 }}>
-      <div style={{ padding: "18px 0 10px" }}>
+      <div style={{ padding: "14px 0 8px" }}>
         <div style={{ display: "inline-block", border: LINE, borderLeft: "none", padding: "4px 0", width: 110, textAlign: "center", fontWeight: 800, fontSize: 14 }}>
           {title}
         </div>
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "40% 60%", flex: 1, minHeight: 0 }}>
-        <div style={{ padding: "0 6px 0 4px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "40% 60%", gridTemplateRows: "minmax(0, 1fr)", flex: 1, minHeight: 0 }}>
+        <div style={{ padding: "0 6px 0 4px", overflow: "hidden" }}>
           {spots.map((s, i) => (
             <SpotBlock key={i} spot={s} />
           ))}
         </div>
-        <div style={{ padding: "0 12px 12px", display: "flex", alignItems: "flex-start", justifyContent: "center" }}>
-          <SheetImage id={imageId} height={330} />
+        <div style={{ padding: "0 10px 6px", minHeight: 0 }}>
+          <SheetImage id={imageId} />
         </div>
       </div>
     </div>
@@ -135,7 +142,7 @@ function UniformBody({ f }: { f: OrderForm }) {
           <div style={{ fontSize: 12, padding: "3px 0 6px", fontWeight: 700 }}>{totalQty(f)} PCS</div>
         </div>
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "50% 50%", flex: 1, minHeight: 0 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "50% 50%", gridTemplateRows: "minmax(0, 1fr)", flex: 1, minHeight: 0 }}>
         <Side title="FRONT" spots={f.front?.length ? f.front : [{ method: "", colour: "", size: "", remark: "" }]} imageId={f.frontImage} />
         <Side title="BACK" spots={f.back?.length ? f.back : [{ method: "", colour: "", size: "", remark: "" }]} imageId={f.backImage} last />
       </div>
@@ -175,14 +182,16 @@ function MerchBody({ f }: { f: OrderForm }) {
           minHeight: 0,
           display: "grid",
           gridTemplateColumns: `repeat(${Math.min(Math.max(images.length, 1), 4)}, minmax(0, 1fr))`,
+          gridTemplateRows: "minmax(0, 1fr)",
           gap: 16,
-          padding: 16,
-          alignItems: "start",
+          padding: "14px 0 0",
         }}
       >
         {images.map((im) => (
-          <div key={im.id} style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "center" }}>
-            <SheetImage id={im.id} height={images.length > 2 ? 300 : 380} />
+          <div key={im.id} style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "center", minHeight: 0 }}>
+            <div style={{ flex: 1, minHeight: 0, width: "100%" }}>
+              <SheetImage id={im.id} />
+            </div>
             {im.caption && <div style={{ ...lbl, textAlign: "center" }}>{im.caption.toUpperCase()}</div>}
           </div>
         ))}
@@ -198,17 +207,19 @@ export function OrderFormSheet({ form, id }: { form: OrderForm; id?: string }) {
       id={id}
       style={{
         width: SHEET_W,
-        minHeight: SHEET_H,
+        height: SHEET_H,
+        padding: SHEET_MARGIN,
         background: "#ffffff",
         color: BLACK,
         fontFamily: font,
-        display: "flex",
-        flexDirection: "column",
         boxSizing: "border-box",
+        overflow: "hidden",
       }}
     >
-      <Header f={form} />
-      {form.kind === "merch" ? <MerchBody f={form} /> : <UniformBody f={form} />}
+      <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", minHeight: 0 }}>
+        <Header f={form} />
+        {form.kind === "merch" ? <MerchBody f={form} /> : <UniformBody f={form} />}
+      </div>
     </div>
   );
 }

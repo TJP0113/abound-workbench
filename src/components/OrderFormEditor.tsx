@@ -99,6 +99,41 @@ function ImageInput({
   );
 }
 
+/** 下拉选单；选「其他」时可自行输入（之前的建议清单会被已填文字过滤，看不到其他选项） */
+function SelectOrOther({ value, options, onChange, label }: { value: string; options: string[]; onChange: (v: string) => void; label: string }) {
+  const { t } = useAuth();
+  const [custom, setCustom] = useState(() => !!value && !options.includes(value));
+  return (
+    <div className="flex flex-col gap-1.5">
+      <select
+        className="field"
+        aria-label={label}
+        value={custom ? "__other" : value}
+        onChange={(e) => {
+          if (e.target.value === "__other") {
+            setCustom(true);
+            onChange("");
+          } else {
+            setCustom(false);
+            onChange(e.target.value);
+          }
+        }}
+      >
+        {!value && !custom && <option value="">—</option>}
+        {options.map((o) => (
+          <option key={o} value={o}>
+            {o}
+          </option>
+        ))}
+        <option value="__other">{t("of.other")}</option>
+      </select>
+      {custom && (
+        <input className="field" autoFocus placeholder={t("of.otherPlaceholder")} aria-label={label} value={value} onChange={(e) => onChange(e.target.value.toUpperCase())} />
+      )}
+    </div>
+  );
+}
+
 function SpotsEditor({ title, spots, onChange }: { title: string; spots: PrintSpot[]; onChange: (s: PrintSpot[]) => void }) {
   const { t } = useAuth();
   const set = (i: number, p: Partial<PrintSpot>) => onChange(spots.map((s, j) => (j === i ? { ...s, ...p } : s)));
@@ -107,9 +142,10 @@ function SpotsEditor({ title, spots, onChange }: { title: string; spots: PrintSp
       {spots.map((s, i) => (
         <div key={i} className="grid grid-cols-2 gap-2 p-3 rounded-[10px] border border-line bg-white">
           <div className="col-span-2 flex items-end gap-2">
-            <Field label={`${title} · PRINT METHOD ${spots.length > 1 ? i + 1 : ""}`}>
-              <input className="field" list="of-print-methods" value={s.method} onChange={(e) => set(i, { method: e.target.value.toUpperCase() })} />
-            </Field>
+            <div className="flex-1 flex flex-col gap-1.5 text-[13px]">
+              <span className="font-medium text-ink-2">{`${title} · PRINT METHOD ${spots.length > 1 ? i + 1 : ""}`}</span>
+              <SelectOrOther label="PRINT METHOD" value={s.method} options={PRINT_METHODS} onChange={(v) => set(i, { method: v })} />
+            </div>
             {spots.length > 1 && (
               <button
                 type="button"
@@ -265,16 +301,6 @@ export function OrderFormEditor({
         </>
       }
     >
-      <datalist id="of-print-methods">
-        {PRINT_METHODS.map((m) => (
-          <option key={m} value={m} />
-        ))}
-      </datalist>
-      <datalist id="of-materials">
-        {MATERIALS.map((m) => (
-          <option key={m} value={m} />
-        ))}
-      </datalist>
       <datalist id="of-merch-fields">
         {MERCH_FIELD_SUGGESTIONS.map((m) => (
           <option key={m} value={m} />
@@ -332,9 +358,10 @@ export function OrderFormEditor({
                   <Field label="CLOTH">
                     <input className="field" value={f.cloth ?? ""} placeholder="e.g. 160GSM EYELET" onChange={(e) => up({ cloth: e.target.value })} />
                   </Field>
-                  <Field label="MATERIAL">
-                    <input className="field" list="of-materials" value={f.material ?? ""} onChange={(e) => up({ material: e.target.value.toUpperCase() })} />
-                  </Field>
+                  <div className="flex flex-col gap-1.5 text-[13px]">
+                    <span className="font-medium text-ink-2">MATERIAL</span>
+                    <SelectOrOther label="MATERIAL" value={f.material ?? ""} options={MATERIALS} onChange={(v) => up({ material: v })} />
+                  </div>
                   <Field label="LABEL">
                     <select className="field" value={f.label} onChange={(e) => up({ label: e.target.value })}>
                       {LABELS.map((x) => (
