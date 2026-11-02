@@ -36,7 +36,9 @@ async function run() {
   if (cid) {
     const num = cid.split("-")[0];
     const appNum = env("NEXT_PUBLIC_FIREBASE_APP_ID").split(":")[1] || "";
-    if (!cid.endsWith(".apps.googleusercontent.com")) checks.GOOGLE_CLIENT_ID = "WRONG FORMAT（应以 .apps.googleusercontent.com 结尾）";
+    // Client ID 本来就会出现在 Google 授权网址里，不是机密，直接显示以便核对
+    if (!cid.endsWith(".apps.googleusercontent.com"))
+      checks.GOOGLE_CLIENT_ID = `WRONG FORMAT（应以 .apps.googleusercontent.com 结尾）现在的值：[${cid.length > 120 ? cid.slice(0, 120) + "…" : cid}]`;
     else if (appNum && num !== appNum) checks.GOOGLE_CLIENT_ID = `WRONG PROJECT（客户端属于项目 ${num}，Firebase 是 ${appNum}）`;
     else checks.GOOGLE_CLIENT_ID = `OK (${num}-…${cid.slice(-30)})`;
   }
