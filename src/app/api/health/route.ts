@@ -1,5 +1,3 @@
-import { adminDb } from "@/lib/server/admin";
-
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
@@ -11,6 +9,14 @@ function mask(email: string): string {
 
 /** 设定检查：只显示各项设定是否正常，不会显示任何密钥 */
 export async function GET() {
+  try {
+    return await run();
+  } catch (e) {
+    return Response.json({ FATAL: e instanceof Error ? `${e.name}: ${e.message}`.slice(0, 500) : String(e) }, { status: 200 });
+  }
+}
+
+async function run() {
   const checks: Record<string, string> = {};
   const env = (k: string) => (process.env[k] || "").trim();
 
@@ -44,11 +50,12 @@ export async function GET() {
   }
 
   try {
+    const { adminDb } = await import("@/lib/server/admin");
     const snap = await adminDb().collection("members").limit(20).get();
     checks.DATABASE = `OK (${snap.size} member(s))`;
     if (admin) checks.ADMIN_IN_LIST = snap.docs.some((d) => d.id === admin) ? "YES" : "NO";
   } catch (e) {
-    checks.DATABASE = `ERROR: ${e instanceof Error ? e.message.slice(0, 200) : String(e)}`;
+    checks.DATABASE = `ERROR: ${e instanceof Error ? `${e.name}: ${e.message}`.slice(0, 400) : String(e)}`;
   }
 
   return Response.json(checks);
