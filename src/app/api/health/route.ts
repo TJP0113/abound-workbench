@@ -8,7 +8,11 @@ function mask(email: string): string {
 }
 
 /** 设定检查：只显示各项设定是否正常，不会显示任何密钥 */
-export async function GET() {
+export async function GET(req: Request) {
+  // 需要加上 ?key=CRON_SECRET 才能查看，避免外人看到设定状态
+  const key = new URL(req.url).searchParams.get("key") || "";
+  const secret = (process.env.CRON_SECRET || "").trim();
+  if (!secret || key !== secret) return Response.json({ error: "Not found" }, { status: 404 });
   try {
     return await run();
   } catch (e) {
