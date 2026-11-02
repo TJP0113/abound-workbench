@@ -53,6 +53,18 @@ service cloud.firestore {
             && (request.resource.data.status == resource.data.status || request.resource.data.status in ['todo', 'doing', 'review']));
     }
 
+    // Order Form 与图片：管理员，或项目参与成员
+    match /orderForms/{id} {
+      allow read, update, delete: if isAdmin() || (isMember() && myEmail() in resource.data.memberEmails);
+      allow create: if isAdmin() || (isMember() && myEmail() in request.resource.data.memberEmails);
+    }
+
+    match /orderImages/{id} {
+      allow read, update, delete: if isAdmin() || (isMember() && myEmail() in resource.data.memberEmails);
+      allow create: if (isAdmin() || (isMember() && myEmail() in request.resource.data.memberEmails))
+        && request.resource.data.data is string && request.resource.data.data.size() < 1000000;
+    }
+
     match /events/{id} {
       allow read, create: if isMember();
       allow update, delete: if isAdmin() || (isMember() && resource.data.createdBy == myEmail());

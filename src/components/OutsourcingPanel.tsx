@@ -55,7 +55,10 @@ export function OutsourcingPanel({ project }: { project: Project }) {
   return (
     <Card className="flex flex-col gap-5 !p-[22px]">
       <div className="flex items-center justify-between gap-3">
-        <h2 className="m-0 text-[15px] font-bold">{t("out.title")}</h2>
+        <div className="flex flex-col gap-0.5">
+          <h2 className="m-0 text-[15px] font-bold">{t("out.title")}</h2>
+          <span className="text-[12px] text-faint">{t("out.internal")}</span>
+        </div>
         <div className="flex items-center gap-2">
           {saved && <span className="text-[12px] text-ok">{t("common.saved")}</span>}
           <Button size="sm" variant="primary" disabled={!dirty || busy} onClick={save}>
@@ -84,7 +87,7 @@ export function OutsourcingPanel({ project }: { project: Project }) {
         </div>
       </section>
 
-      <fieldset className="m-0 p-0 pb-4 border-0 border-b border-line-soft flex flex-col gap-2.5">
+      <fieldset className="m-0 p-0 border-0 flex flex-col gap-2.5">
         <legend className="p-0 mb-2.5 text-[13px] font-bold">{t("out.shipping")}</legend>
         <div className="flex flex-wrap gap-2">
           {SHIPPING_OPTIONS.map((s) => (
@@ -108,92 +111,6 @@ export function OutsourcingPanel({ project }: { project: Project }) {
         <span className="text-[12px] text-faint">{t("out.shippingHint")}</span>
       </fieldset>
 
-      <section className="flex flex-col gap-2.5">
-        <div className="flex items-center justify-between gap-2">
-          <h3 className="m-0 text-[13px] font-bold">{t("out.order")}</h3>
-          <label className="flex items-center gap-2 text-[12px] text-muted">
-            {t("out.sizes")}
-            <input
-              className="field !min-h-[32px] !w-[150px] !py-1 !text-[12px]"
-              value={sizes.join(",")}
-              onChange={(e) =>
-                up({
-                  sizeColumns: e.target.value
-                    .split(/[,，\s]+/)
-                    .map((s) => s.trim())
-                    .filter(Boolean),
-                })
-              }
-            />
-          </label>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse text-[13px] min-w-[560px]">
-            <thead>
-              <tr className="text-muted text-[12px]">
-                <th scope="col" className="text-left font-medium py-1.5 pr-2">{t("out.style")}</th>
-                <th scope="col" className="text-left font-medium py-1.5 pr-2">{t("out.color")}</th>
-                {sizes.map((s) => (
-                  <th key={s} scope="col" className="font-medium py-1.5 px-1 w-[52px]">
-                    {s}
-                  </th>
-                ))}
-                <th scope="col" className="font-medium py-1.5 text-right">{t("out.total")}</th>
-                <th aria-hidden="true" />
-              </tr>
-            </thead>
-            <tbody>
-              {lines.map((l, i) => (
-                <tr key={i} className="border-t border-line-soft">
-                  <td className="py-1.5 pr-2">
-                    <input className="field !min-h-[34px] !py-1 min-w-[96px]" aria-label={t("out.style")} value={l.style} onChange={(e) => setLine(i, { ...l, style: e.target.value })} />
-                  </td>
-                  <td className="py-1.5 pr-2">
-                    <input className="field !min-h-[34px] !py-1 min-w-[72px]" aria-label={t("out.color")} value={l.color} onChange={(e) => setLine(i, { ...l, color: e.target.value })} />
-                  </td>
-                  {sizes.map((s) => (
-                    <td key={s} className="py-1.5 px-1">
-                      <input
-                        type="number"
-                        min={0}
-                        aria-label={`${l.style} ${s}`}
-                        className="field !min-h-[34px] !py-1 !px-1.5 text-center"
-                        value={l.sizes?.[s] ?? ""}
-                        onChange={(e) => setLine(i, { ...l, sizes: { ...l.sizes, [s]: Math.max(0, Number(e.target.value) || 0) } })}
-                      />
-                    </td>
-                  ))}
-                  <td className="py-1.5 text-right font-bold">{lineTotal(l)}</td>
-                  <td className="py-1.5 pl-1">
-                    <button
-                      type="button"
-                      aria-label={t("common.delete")}
-                      className="w-8 h-8 rounded-lg text-danger hover:bg-danger-soft cursor-pointer"
-                      onClick={() => up({ lines: lines.filter((_, j) => j !== i) })}
-                    >
-                      ×
-                    </button>
-                  </td>
-                </tr>
-              ))}
-              {lines.length > 0 && (
-                <tr className="border-t border-line">
-                  <td colSpan={2 + sizes.length} className="py-2 text-right text-muted">
-                    {t("out.total")}
-                  </td>
-                  <td className="py-2 text-right font-bold">{grand}</td>
-                  <td />
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-        <div>
-          <Button size="sm" onClick={() => up({ lines: [...lines, { style: "", color: "", sizes: {} }] })}>
-            {t("out.addLine")}
-          </Button>
-        </div>
-      </section>
     </Card>
   );
 }

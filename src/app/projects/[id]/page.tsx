@@ -9,6 +9,7 @@ import { TopBar } from "@/components/AppShell";
 import { ProjectForm } from "@/components/ProjectForm";
 import { TaskForm } from "@/components/TaskForm";
 import { OutsourcingPanel } from "@/components/OutsourcingPanel";
+import { OrderFormsPanel } from "@/components/OrderFormsPanel";
 import { TaskActions } from "@/components/TaskBits";
 import { Button, Card, DueLabel, EmptyState, Icon, PROJECT_STATUS_COLORS, Pill, ServiceTag, TASK_STATUS_COLORS, cx } from "@/components/ui";
 import { useActions } from "@/lib/actions";
@@ -316,6 +317,8 @@ export default function ProjectDetail({ params }: { params: Promise<{ id: string
               ))}
             </div>
           </Card>
+
+          {(hasUniform || project.services.some((s) => s.type === "merch")) && <OrderFormsPanel project={project} />}
 
           <Card className="flex flex-col gap-3 !p-[22px]">
             <h2 className="m-0 text-[15px] font-bold">{t("proj.notes")}</h2>

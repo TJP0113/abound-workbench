@@ -99,6 +99,15 @@ export function useActions() {
         );
         await batch.commit();
       }
+      // 成员改变：Order Form 与其图片的权限也跟着改
+      if (isAdmin && membersChanged) {
+        for (const c of ["orderForms", "orderImages"]) {
+          const snap = await getDocs(query(collection(db(), c), where("projectId", "==", id)));
+          const batch = writeBatch(db());
+          snap.forEach((d) => batch.update(d.ref, { memberEmails: patch.memberEmails }));
+          await batch.commit();
+        }
+      }
       if (patch.services?.some((s) => s.type === "social")) await api("/api/maintenance").catch(() => {});
       requestSync();
     },
@@ -107,9 +116,11 @@ export function useActions() {
 
   const deleteProject = useCallback(
     async (id: string) => {
-      const snap = await getDocs(query(collection(db(), "tasks"), where("projectId", "==", id)));
       const batch = writeBatch(db());
-      snap.forEach((d) => batch.delete(d.ref));
+      for (const c of ["tasks", "orderForms", "orderImages"]) {
+        const snap = await getDocs(query(collection(db(), c), where("projectId", "==", id)));
+        snap.forEach((d) => batch.delete(d.ref));
+      }
       batch.delete(doc(db(), "projects", id));
       await batch.commit();
       requestSync();

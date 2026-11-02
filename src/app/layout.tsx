@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   title: "ABOUND CREATION 工作台",
   description: "ABOUND CREATION 设计工作室内部工作台",
   manifest: "/manifest.webmanifest",
-  icons: { icon: "/icon-192.png", apple: "/apple-touch-icon.png" },
+  icons: { icon: [{ url: "/favicon-48.png", sizes: "48x48" }, { url: "/icon-192.png", sizes: "192x192" }], apple: "/apple-touch-icon.png" },
   appleWebApp: { capable: true, title: "ABOUND", statusBarStyle: "black" },
 };
 

@@ -179,10 +179,9 @@ export function AppShell({ children }: { children: ReactNode }) {
         className="hidden md:flex md:w-[232px] md:flex-none bg-nav text-[#C9CAD0] px-4 py-7 box-border flex-col gap-7 md:sticky md:top-0 md:h-screen"
       >
         <div className="px-3 flex flex-col gap-1">
-          <div className="font-semibold text-[17px] tracking-[0.14em] text-white" style={{ fontFamily: "var(--font-display)" }}>
-            {t("app.name")}
-          </div>
-          <div className="text-[12px] text-[#A3A5AC]">{t("app.sub")}</div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo-on-dark.png" alt="ABOUND CREATION" className="h-[38px] w-auto self-start" />
+          <div className="text-[12px] text-[#A3A5AC] mt-1.5">{t("app.sub")}</div>
         </div>
         <div className="flex flex-col gap-1">
           {items.map((n) => {
@@ -224,9 +223,8 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <div className="flex-1 min-w-0 pb-[84px] md:pb-0">
         <div className="md:hidden bg-nav text-white px-4 py-3 flex items-center justify-between">
-          <span className="font-semibold text-[14px] tracking-[0.14em]" style={{ fontFamily: "var(--font-display)" }}>
-            {t("app.name")}
-          </span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo-on-dark.png" alt="ABOUND CREATION" className="h-[28px] w-auto" />
           <button type="button" onClick={() => signOut()} aria-label={t("nav.signOut")} className="w-11 h-11 flex items-center justify-center text-[#C9CAD0] cursor-pointer">
             <Icon name="logout" />
           </button>

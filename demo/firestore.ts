@@ -87,3 +87,6 @@ export function writeBatch() {
     },
   };
 }
+export async function getDoc(r: DocRef) {
+  return snapDoc(r.col, r.id);
+}

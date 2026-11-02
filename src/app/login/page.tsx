@@ -42,9 +42,8 @@ export default function LoginPage() {
       <div className="flex-1 flex items-center justify-center px-4 pb-16">
         <div className="w-full max-w-[400px] flex flex-col gap-8">
           <div className="flex flex-col gap-2">
-            <div className="text-[22px] font-semibold tracking-[0.16em]" style={{ fontFamily: "var(--font-display)" }}>
-              ABOUND CREATION
-            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo-on-dark.png" alt="ABOUND CREATION" className="h-[56px] w-auto self-start" />
             <div className="text-[14px] text-[#A3A5AC]">{t("app.sub")}</div>
           </div>
           <div className="bg-white text-ink rounded-[16px] p-6 flex flex-col gap-4">
