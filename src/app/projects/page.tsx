@@ -62,16 +62,16 @@ function ListView({ projects }: { projects: Project[] }) {
                 <td className="px-3 py-3.5 border-b border-[#F0F0EC]">
                   <div className="flex flex-wrap gap-1">
                     {p.services.map((s, i) => (
-                      <ServiceTag key={i} type={s.type} variant={s.variant} />
+                      <ServiceTag key={i} type={s.type} variant={s.variant} label={s.label} />
                     ))}
                   </div>
                 </td>
                 <td className="px-3 py-3.5 border-b border-[#F0F0EC] text-ink-2">
-                  {cur?.stage ? stage(cur.stage) : t("proj.allDone")}
+                  {cur?.stage ? stage(cur.stage) : cur?.svc.stages.length === 0 ? "—" : t("proj.allDone")}
                   <div className="text-[12px] text-faint mt-1">
                     {social
                       ? t("social.cycleProgress", { a: social.done, b: social.total })
-                      : cur
+                      : cur && cur.svc.stages.length
                         ? t("proj.stageOf", { a: Math.min(cur.index + 1, cur.svc.stages.length), b: cur.svc.stages.length })
                         : ""}
                   </div>

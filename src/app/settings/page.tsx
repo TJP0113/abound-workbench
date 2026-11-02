@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
 import { LangToggle, TopBar } from "@/components/AppShell";
 import { Avatar, Button, Card, Icon, PageHeader } from "@/components/ui";
+import { PushCard } from "@/components/PushCard";
 import { useGcalStatus } from "@/lib/useGcalStatus";
 import { formatDateTime } from "@/lib/dates";
 
@@ -77,6 +78,8 @@ function SettingsInner() {
           <LangToggle />
         </div>
       </Card>
+
+      <PushCard />
 
       {isAdmin && (
         <Card className="flex flex-col gap-4 max-w-[720px]">

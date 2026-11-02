@@ -7,12 +7,15 @@ import { useData } from "@/components/DataProvider";
 import { TopBar } from "@/components/AppShell";
 import { TaskForm } from "@/components/TaskForm";
 import { TaskActions } from "@/components/TaskBits";
+import { PushBanner } from "@/components/PushCard";
 import { Avatar, Card, DueLabel, EmptyState, Pill, PRIORITY_COLORS, ProgressBar, Segmented, ServiceTag } from "@/components/ui";
 import { EVENT_COLORS, SERVICE_COLORS } from "@/lib/services";
 import { currentStage, projectProgress, taskTitle } from "@/lib/project-utils";
 import { buildCalendarItems } from "@/lib/calendar-items";
 import { addDays, daysBetween, dueTone, formatDate, todayStr, weekStart, weekdayShort } from "@/lib/dates";
 import type { Task } from "@/lib/types";
+
+const LEAD_DAYS = 7;
 
 function SectionTitle({ children, aside }: { children: React.ReactNode; aside?: React.ReactNode }) {
   return (
@@ -33,8 +36,9 @@ export default function Dashboard() {
   const me = member!.email;
 
   const mine = tasks.filter((x) => x.assigneeEmails.includes(me) && x.status !== "done");
-  const myToday = mine.filter((x) => x.due <= today && x.status !== "review");
-  const myWeek = mine.filter((x) => x.due <= weekEnd && x.status !== "review");
+  // 任务在截止日前 LEAD_DAYS 天就出现在「今天要做」
+  const myToday = mine.filter((x) => x.due <= addDays(today, LEAD_DAYS) && x.status !== "review");
+  const myWeek = mine.filter((x) => x.status !== "review");
   const shown = (range === "today" ? myToday : myWeek).sort((a, b) => a.due.localeCompare(b.due));
   const revisions = mine.filter((x) => x.status === "revise");
 
@@ -70,6 +74,8 @@ export default function Dashboard() {
         <TopBar />
       </header>
 
+      <PushBanner />
+
       <section aria-labelledby="mine" className="flex flex-col gap-3.5">
         <h2 id="mine" className="m-0 text-[16px] font-bold">
           {t("dash.mine")}
@@ -91,6 +97,7 @@ export default function Dashboard() {
             >
               {t("dash.myTasks")}
             </SectionTitle>
+            {range === "today" && <p className="m-0 -mt-1.5 text-[12px] text-faint">{t("dash.leadHint", { n: LEAD_DAYS })}</p>}
             <div className="flex flex-col">
               {shown.length === 0 && <EmptyState>{t("dash.noTasks")}</EmptyState>}
               {shown.slice(0, 8).map((x) => (
@@ -223,7 +230,7 @@ export default function Dashboard() {
                       </div>
                       <ProgressBar pct={pct} color={SERVICE_COLORS[type][1]} />
                       <div className="flex flex-wrap gap-2 text-[12px] text-muted items-center">
-                        <ServiceTag type={type} variant={p.services[0]?.variant} />
+                        <ServiceTag type={type} variant={p.services[0]?.variant} label={p.services[0]?.label} />
                         {cur?.stage && <span>{t("dash.current", { stage: stage(cur.stage) })}</span>}
                         <span>{t("dash.due", { date: formatDate(p.dueDate, lang) })}</span>
                       </div>

@@ -13,6 +13,7 @@ const nextConfig: NextConfig = {
             "firebase/app": "./demo/app.ts",
             "firebase/auth": "./demo/auth.ts",
             "firebase/firestore": "./demo/firestore.ts",
+            "firebase/messaging": "./demo/messaging.ts",
           },
         },
       }

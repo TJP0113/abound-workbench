@@ -35,7 +35,7 @@ export function Card({ children, className }: { children: ReactNode; className?:
   return <div className={cx("bg-card border border-line rounded-[14px] p-5", className)}>{children}</div>;
 }
 
-export function ServiceTag({ type, variant }: { type: ServiceType; variant?: string }) {
+export function ServiceTag({ type, variant, label }: { type: ServiceType; variant?: string; label?: string }) {
   const { t } = useAuth();
   const [bg, fg] = SERVICE_COLORS[type];
   return (
@@ -45,6 +45,7 @@ export function ServiceTag({ type, variant }: { type: ServiceType; variant?: str
     >
       {t(`svc.${type}`)}
       {type === "uniform" && variant ? ` · ${t(`variant.${variant}`)}` : ""}
+      {type === "other" && label ? ` · ${label}` : ""}
     </span>
   );
 }
@@ -123,6 +124,7 @@ export function DueLabel({ date, done, className }: { date?: string; done?: bool
     if (left < 0) label = t("common.overdueDays", { n: -left });
     else if (left === 0) label = t("common.today");
     else if (left === 1) label = `${label} · ${t("common.tomorrow")}`;
+    else if (left <= 7) label = `${label} · ${t("common.daysLeft", { n: left })}`;
   }
   const color = tone === "red" ? "#A82828" : tone === "amber" ? "#8A5A00" : undefined;
   return (

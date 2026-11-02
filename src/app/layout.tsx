@@ -7,6 +7,9 @@ import { AppShell } from "@/components/AppShell";
 export const metadata: Metadata = {
   title: "ABOUND CREATION 工作台",
   description: "ABOUND CREATION 设计工作室内部工作台",
+  manifest: "/manifest.webmanifest",
+  icons: { icon: "/icon-192.png", apple: "/apple-touch-icon.png" },
+  appleWebApp: { capable: true, title: "ABOUND", statusBarStyle: "black" },
 };
 
 export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#18191B" };

@@ -18,6 +18,11 @@ export function serviceProgressWithTasks(p: Project, s: ProjectService, tasks: T
     const c = socialCycleProgress(p, tasks);
     if (c) return Math.round((c.done / c.total) * 100);
   }
+  // 没有阶段（例如「其他」杂事只用任务）：按任务完成数计算
+  if (!s.stages.length) {
+    const list = tasks.filter((t) => t.projectId === p.id);
+    return list.length ? Math.round((list.filter((t) => t.status === "done").length / list.length) * 100) : 0;
+  }
   return serviceProgress(s);
 }
 

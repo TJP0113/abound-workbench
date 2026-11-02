@@ -8,6 +8,7 @@ import { useData } from "./DataProvider";
 import { Avatar, Icon, cx } from "./ui";
 import { useActions } from "@/lib/actions";
 import { formatDateTime } from "@/lib/dates";
+import { refreshPush } from "@/lib/push";
 
 const NAV = [
   { href: "/", key: "nav.dashboard", icon: "dashboard" },
@@ -156,6 +157,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     if (state !== "ready") return;
     const run = () => api("/api/gcal/sync", { pullOnly: true }).catch(() => {});
     const first = setTimeout(run, 3000);
+    refreshPush(api);
     const iv = setInterval(run, 5 * 60 * 1000);
     return () => {
       clearTimeout(first);
@@ -167,6 +169,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   if (state !== "ready" || !member) return <FullScreenMessage>{t("common.loading")}</FullScreenMessage>;
 
   const items = NAV.filter((n) => !n.admin || isAdmin);
+  // 手机底部最多 5 个：不放「员工」，确保「设置」（开启通知）一定在
+  const mobileItems = items.filter((n) => n.href !== "/team");
 
   return (
     <div className="min-h-screen md:flex">
@@ -235,9 +239,9 @@ export function AppShell({ children }: { children: ReactNode }) {
       <nav
         aria-label="Mobile"
         className="md:hidden fixed bottom-0 inset-x-0 z-20 grid bg-white border-t border-line px-2 pt-1.5 pb-4"
-        style={{ gridTemplateColumns: `repeat(${Math.min(items.length, 5)}, minmax(0, 1fr))` }}
+        style={{ gridTemplateColumns: `repeat(${mobileItems.length}, minmax(0, 1fr))` }}
       >
-        {items.slice(0, 5).map((n) => {
+        {mobileItems.map((n) => {
           const active = isActive(path, n.href);
           return (
             <Link

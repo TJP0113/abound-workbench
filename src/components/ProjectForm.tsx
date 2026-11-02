@@ -89,7 +89,6 @@ export function ProjectForm({ open, onClose, project }: { open: boolean; onClose
       : {
           name: "",
           client: "",
-          budget: "",
           startDate: today,
           dueDate: addDays(today, 14),
           ownerEmail: member?.email ?? "",
@@ -110,6 +109,7 @@ export function ProjectForm({ open, onClose, project }: { open: boolean; onClose
     const s = newService(type, variant);
     if (type === "social") s.social = { startMonth: monthStr(), endMonth: null, posts: 12, videos: 4, cycles: [] };
     setSvc(i, s);
+    if (type === "other") setOpenStages(i);
   };
 
   const save = async () => {
@@ -166,9 +166,6 @@ export function ProjectForm({ open, onClose, project }: { open: boolean; onClose
         </Field>
         <Field label={t("proj.due")} required>
           <input type="date" className="field" value={f.dueDate} onChange={(e) => up({ dueDate: e.target.value })} />
-        </Field>
-        <Field label={t("proj.budget")}>
-          <input className="field" placeholder="RM" value={f.budget ?? ""} onChange={(e) => up({ budget: e.target.value })} />
         </Field>
         <Field label={t("proj.status")}>
           <select className="field" value={f.status} onChange={(e) => up({ status: e.target.value as ProjectStatus })}>
@@ -258,11 +255,16 @@ export function ProjectForm({ open, onClose, project }: { open: boolean; onClose
               </div>
             </div>
             <div className="flex flex-wrap gap-1.5 items-center">
-              <ServiceTag type={s.type} variant={s.variant} />
+              <ServiceTag type={s.type} variant={s.variant} label={s.label} />
               {s.stages.join() !== defaultStages(s.type, s.variant).join() && (
                 <span className="text-[12px] text-faint">✎</span>
               )}
             </div>
+            {s.type === "other" && (
+              <Field label={t("proj.otherLabel")} hint={t("proj.otherHint")}>
+                <input className="field" value={s.label ?? ""} placeholder={t("proj.otherPlaceholder")} onChange={(e) => setSvc(i, { ...s, label: e.target.value })} />
+              </Field>
+            )}
             {openStages === i && <StageEditor svc={s} onChange={(x) => setSvc(i, x)} />}
             {s.type === "social" && s.social && (
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

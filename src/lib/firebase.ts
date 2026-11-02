@@ -13,13 +13,15 @@ const config = {
     .replace(/\/+$/, ""),
   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  // 推送通知用：发送者编号就是 appId 里的项目编号（1:编号:web:…）
+  messagingSenderId: (process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "").split(":")[1],
 };
 
 export const firebaseConfigured = Boolean(config.apiKey && config.projectId);
 
 let app: FirebaseApp | null = null;
 
-function getApp(): FirebaseApp {
+export function getApp(): FirebaseApp {
   if (!app) app = getApps()[0] ?? initializeApp(config);
   return app;
 }

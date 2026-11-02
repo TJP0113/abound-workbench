@@ -33,12 +33,17 @@ function StageTrack({ project, svc, index }: { project: Project; svc: ProjectSer
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
-          <ServiceTag type={svc.type} variant={svc.variant} />
+          <ServiceTag type={svc.type} variant={svc.variant} label={svc.label} />
           <span className="text-[12px] text-muted">
-            {svc.current >= svc.stages.length ? t("proj.allDone") : t("proj.stageOf", { a: svc.current + 1, b: svc.stages.length })} · {pct}%
+            {!svc.stages.length
+              ? t("proj.noStages")
+              : svc.current >= svc.stages.length
+                ? t("proj.allDone")
+                : t("proj.stageOf", { a: svc.current + 1, b: svc.stages.length })}{" "}
+            · {pct}%
           </span>
         </div>
-        {canEdit && (
+        {canEdit && svc.stages.length > 0 && (
           <div className="flex gap-2">
             <Button size="sm" variant="ghost" disabled={svc.current <= 0} onClick={() => setCurrent(svc.current - 1)}>
               {t("proj.backStage")}
@@ -235,7 +240,7 @@ export default function ProjectDetail({ params }: { params: Promise<{ id: string
           <div className="flex flex-col gap-2.5">
             <div className="flex flex-wrap gap-2">
               {project.services.map((s, i) => (
-                <ServiceTag key={i} type={s.type} variant={s.variant} />
+                <ServiceTag key={i} type={s.type} variant={s.variant} label={s.label} />
               ))}
               <Pill bg={sbg} fg={sfg} round>
                 {t(`status.${project.status}`)}
@@ -256,12 +261,6 @@ export default function ProjectDetail({ params }: { params: Promise<{ id: string
               <span className="text-[12px] text-muted">{t("proj.due")}</span>
               <DueLabel date={project.dueDate} done={project.status === "done" || project.status === "cancelled"} className="text-[15px]" />
             </div>
-            {project.budget && (
-              <div className="flex flex-col gap-1">
-                <span className="text-[12px] text-muted">{t("proj.budget")}</span>
-                <span className="text-[15px] font-medium">{project.budget}</span>
-              </div>
-            )}
             <div className="flex flex-col gap-1">
               <span className="text-[12px] text-muted">{t("proj.progress")}</span>
               <span className="text-[18px] font-semibold" style={{ fontFamily: "var(--font-display)" }}>

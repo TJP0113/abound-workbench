@@ -1,5 +1,6 @@
 import "server-only";
 import { adminDb } from "./admin";
+import { pushNotifications } from "./push";
 import { addDays, lastDayOfMonth, monthStr, todayStr } from "../dates";
 import { translate } from "../i18n";
 import type { AppNotification, NotificationType, Project, Task } from "../types";
@@ -67,6 +68,7 @@ export async function runSocialCycles(): Promise<{ cycles: number; finished: num
 async function sendNotifs(to: string[], type: NotificationType, title: string, link: string) {
   const db = adminDb();
   const batch = db.batch();
+  const list: Omit<AppNotification, "id">[] = [];
   for (const toEmail of Array.from(new Set(to))) {
     const n: Omit<AppNotification, "id"> = {
       toEmail,
@@ -78,8 +80,10 @@ async function sendNotifs(to: string[], type: NotificationType, title: string, l
       createdAt: Date.now(),
     };
     batch.set(db.collection("notifications").doc(), n);
+    list.push(n);
   }
   await batch.commit();
+  await pushNotifications(list).catch((e) => console.error("[push]", e));
 }
 
 /** 每日提醒：明天截止、刚逾期；并清理 30 天前已读通知 */

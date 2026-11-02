@@ -12,7 +12,7 @@ export interface Member {
   lang?: Lang;
 }
 
-export type ServiceType = "brand" | "uniform" | "social" | "merch" | "graphic" | "photo";
+export type ServiceType = "brand" | "uniform" | "social" | "merch" | "graphic" | "photo" | "other";
 export type UniformVariant = "readymade" | "custom";
 
 export interface SocialCycle {
@@ -32,6 +32,7 @@ export interface SocialPlan {
 export interface ProjectService {
   type: ServiceType;
   variant?: UniformVariant;
+  label?: string; // 「其他」类型：要做的杂事名称
   stages: string[]; // "stage.xxx" 为预设阶段键，其余为自定义文字
   current: number; // 0..stages.length，等于 length 表示全部完成
   social?: SocialPlan;
@@ -66,7 +67,7 @@ export interface Project {
   id: string;
   name: string;
   client: string;
-  budget?: string;
+  budget?: string; // 已停用，保留旧资料
   startDate: string; // YYYY-MM-DD
   dueDate: string; // YYYY-MM-DD
   ownerEmail: string;

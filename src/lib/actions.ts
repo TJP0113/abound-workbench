@@ -45,6 +45,7 @@ export function useActions() {
       if (!targets.length) return;
       const full = { from: memberName(me), ...vars };
       const batch = writeBatch(db());
+      const ids: string[] = [];
       for (const toEmail of targets) {
         const n: Omit<AppNotification, "id"> = {
           toEmail,
@@ -56,11 +57,19 @@ export function useActions() {
           createdAt: Date.now(),
           fromEmail: me,
         };
-        batch.set(doc(collection(db(), "notifications")), n);
+        const ref = doc(collection(db(), "notifications"));
+        ids.push(ref.id);
+        batch.set(ref, n);
       }
-      await batch.commit().catch((e) => console.error("[notify]", e));
+      try {
+        await batch.commit();
+        // 同时推送到对方的电脑 / 手机（失败不影响站内通知）
+        api("/api/push/send", { ids }).catch(() => {});
+      } catch (e) {
+        console.error("[notify]", e);
+      }
     },
-    [me, memberName]
+    [me, memberName, api]
   );
 
   const adminEmails = useMemo(() => members.filter((m) => m.role === "admin" && m.active).map((m) => m.email), [members]);

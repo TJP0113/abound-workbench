@@ -1,6 +1,6 @@
 import type { EventType, ProjectService, ServiceType, UniformVariant } from "./types";
 
-export const SERVICE_TYPES: ServiceType[] = ["brand", "uniform", "social", "merch", "graphic", "photo"];
+export const SERVICE_TYPES: ServiceType[] = ["brand", "uniform", "social", "merch", "graphic", "photo", "other"];
 
 // 背景色 / 文字色（与原型一致）
 export const SERVICE_COLORS: Record<ServiceType, [string, string]> = {
@@ -10,6 +10,7 @@ export const SERVICE_COLORS: Record<ServiceType, [string, string]> = {
   merch: ["#E3F1EE", "#1F6B5C"],
   graphic: ["#EFEAF8", "#5B3A9E"],
   photo: ["#EDEDEA", "#3F4146"],
+  other: ["#F3EFDF", "#6B5512"],
 };
 
 export const EVENT_COLORS: Record<EventType, { bg: string; fg: string; solid: string; gcal: string }> = {
@@ -38,6 +39,7 @@ const STAGES: Record<string, string[]> = {
   merch: ["brief", "design", "sample", "confirm", "produce", "deliver"],
   graphic: ["brief", "firstDraft", "revise", "final", "deliverPrint"],
   photo: ["brief", "shootPlan", "shoot", "post", "clientConfirm", "deliver"],
+  other: [], // 杂事：由使用者自行填写步骤
 };
 
 export function serviceKey(type: ServiceType, variant?: UniformVariant): string {

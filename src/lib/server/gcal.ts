@@ -3,6 +3,8 @@ import { calendar, type calendar_v3 } from "@googleapis/calendar";
 import { OAuth2Client } from "google-auth-library";
 import { FieldValue } from "firebase-admin/firestore";
 import { adminDb } from "./admin";
+import { appUrl } from "./url";
+export { appUrl };
 import { EVENT_COLORS } from "../services";
 import { addDays, TIMEZONE, todayStr } from "../dates";
 import type { CalEvent, EventType, Project, Task } from "../types";
@@ -18,12 +20,6 @@ interface GcalSettings {
   lockUntil?: number;
 }
 
-export function appUrl(): string {
-  // 容错：没写 https:// 时自动补上，去掉结尾斜线
-  let u = (process.env.APP_URL || "http://localhost:3000").trim().replace(/\/+$/, "");
-  if (!/^https?:\/\//i.test(u)) u = `https://${u.replace(/^\/+/, "")}`;
-  return u;
-}
 
 export function oauthClient(): OAuth2Client {
   const id = (process.env.GOOGLE_CLIENT_ID || "").trim();
