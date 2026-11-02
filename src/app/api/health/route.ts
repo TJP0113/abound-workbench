@@ -31,6 +31,18 @@ async function run() {
   ])
     checks[k] = env(k) ? "OK" : "MISSING";
 
+  // OAuth 客户端检查：格式，以及是否属于同一个 Google Cloud 项目（编号要和 Firebase appId 里的一致）
+  const cid = env("GOOGLE_CLIENT_ID");
+  if (cid) {
+    const num = cid.split("-")[0];
+    const appNum = env("NEXT_PUBLIC_FIREBASE_APP_ID").split(":")[1] || "";
+    if (!cid.endsWith(".apps.googleusercontent.com")) checks.GOOGLE_CLIENT_ID = "WRONG FORMAT（应以 .apps.googleusercontent.com 结尾）";
+    else if (appNum && num !== appNum) checks.GOOGLE_CLIENT_ID = `WRONG PROJECT（客户端属于项目 ${num}，Firebase 是 ${appNum}）`;
+    else checks.GOOGLE_CLIENT_ID = `OK (${num}-…${cid.slice(-30)})`;
+  }
+  const sec = env("GOOGLE_CLIENT_SECRET");
+  if (sec) checks.GOOGLE_CLIENT_SECRET = sec.startsWith("GOCSPX-") ? `OK (长度 ${sec.length})` : `可能不对（通常以 GOCSPX- 开头，长度 ${sec.length}）`;
+
   const admin = env("ADMIN_EMAIL").toLowerCase();
   checks.ADMIN_EMAIL = admin ? `OK (${mask(admin)})` : "MISSING";
   checks.APP_URL = env("APP_URL") ? `OK (${env("APP_URL")})` : "MISSING";

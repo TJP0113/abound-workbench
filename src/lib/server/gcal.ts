@@ -26,8 +26,8 @@ export function appUrl(): string {
 }
 
 export function oauthClient(): OAuth2Client {
-  const id = process.env.GOOGLE_CLIENT_ID;
-  const secret = process.env.GOOGLE_CLIENT_SECRET;
+  const id = (process.env.GOOGLE_CLIENT_ID || "").trim();
+  const secret = (process.env.GOOGLE_CLIENT_SECRET || "").trim();
   if (!id || !secret) throw new Error("GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET are not set");
   return new OAuth2Client({ clientId: id, clientSecret: secret, redirectUri: `${appUrl()}/api/gcal/callback` });
 }
@@ -59,7 +59,7 @@ export async function completeConnection(code: string): Promise<void> {
   auth.setCredentials(tokens);
   let email = "";
   if (tokens.id_token) {
-    const ticket = await auth.verifyIdToken({ idToken: tokens.id_token, audience: process.env.GOOGLE_CLIENT_ID });
+    const ticket = await auth.verifyIdToken({ idToken: tokens.id_token, audience: (process.env.GOOGLE_CLIENT_ID || "").trim() });
     email = ticket.getPayload()?.email || "";
   }
   const cal = calendar({ version: "v3", auth });
