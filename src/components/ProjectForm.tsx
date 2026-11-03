@@ -113,7 +113,7 @@ export function ProjectForm({ open, onClose, project }: { open: boolean; onClose
   };
 
   const save = async () => {
-    if (!f.name.trim() || !f.dueDate || !f.ownerEmail || !f.services.length) {
+    if (!f.name.trim() || !f.ownerEmail || !f.services.length) {
       setError(t("common.required"));
       return;
     }
@@ -164,7 +164,7 @@ export function ProjectForm({ open, onClose, project }: { open: boolean; onClose
         <Field label={t("proj.start")}>
           <input type="date" className="field" value={f.startDate} onChange={(e) => up({ startDate: e.target.value })} />
         </Field>
-        <Field label={t("proj.due")} required>
+        <Field label={t("proj.due")}>
           <input type="date" className="field" value={f.dueDate} onChange={(e) => up({ dueDate: e.target.value })} />
         </Field>
         <Field label={t("proj.status")}>

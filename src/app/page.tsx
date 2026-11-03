@@ -214,7 +214,7 @@ export default function Dashboard() {
               <SectionTitle>{t("dash.progress")}</SectionTitle>
               {open_.length === 0 && <EmptyState>{t("proj.empty")}</EmptyState>}
               {[...open_]
-                .sort((a, b) => a.dueDate.localeCompare(b.dueDate))
+                .sort((a, b) => (a.dueDate || "9").localeCompare(b.dueDate || "9"))
                 .slice(0, 8)
                 .map((p) => {
                   const pct = projectProgress(p, tasks);
@@ -232,7 +232,7 @@ export default function Dashboard() {
                       <div className="flex flex-wrap gap-2 text-[12px] text-muted items-center">
                         <ServiceTag type={type} variant={p.services[0]?.variant} label={p.services[0]?.label} />
                         {cur?.stage && <span>{t("dash.current", { stage: stage(cur.stage) })}</span>}
-                        <span>{t("dash.due", { date: formatDate(p.dueDate, lang) })}</span>
+                        {p.dueDate && <span>{t("dash.due", { date: formatDate(p.dueDate, lang) })}</span>}
                       </div>
                     </Link>
                   );
