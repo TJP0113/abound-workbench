@@ -193,14 +193,15 @@ export default function Dashboard() {
               ]}
             />
           </div>
-          <div className="hidden sm:grid grid-cols-[minmax(0,1fr)_110px_96px] gap-3 px-5 py-2 border-y border-line-soft text-[11.5px] text-muted">
+          <div className="hidden sm:grid grid-cols-[minmax(0,1fr)_110px_96px_150px] gap-3 px-5 py-2 border-y border-line-soft text-[11.5px] text-muted">
             <span>{t("task.title")}</span>
             <span>{t("task.due")}</span>
             <span>{t("proj.status")}</span>
+            <span />
           </div>
           {shown.length === 0 && <EmptyState>{t("dash.noTasks")}</EmptyState>}
           {shown.slice(0, 12).map((x) => (
-            <div key={x.id} className="grid grid-cols-[minmax(0,1fr)_auto] sm:grid-cols-[minmax(0,1fr)_110px_96px] gap-x-3 gap-y-1.5 items-center px-5 py-3 border-b border-[#F5F3F0]">
+            <div key={x.id} className="grid grid-cols-[minmax(0,1fr)_auto] sm:grid-cols-[minmax(0,1fr)_110px_96px_150px] gap-x-3 gap-y-1.5 items-center px-5 py-3 border-b border-[#F5F3F0]">
               <div className="min-w-0 flex flex-col gap-1">
                 <button type="button" onClick={() => setOpen(x)} className="text-left text-[13.5px] font-medium cursor-pointer truncate">
                   {taskTitle(x, lang)}
@@ -214,7 +215,7 @@ export default function Dashboard() {
               <span className="hidden sm:block">
                 <StatusDot dot={TASK_STATUS_COLORS[x.status][2]}>{taskStatusLabel(x.status)}</StatusDot>
               </span>
-              <div className="col-span-full w-fit min-w-[160px] empty:hidden">
+              <div className="col-span-full sm:col-span-1 w-full max-w-[200px] sm:max-w-none sm:justify-self-end empty:hidden">
                 <TaskActions task={x} />
               </div>
             </div>
