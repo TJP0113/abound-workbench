@@ -132,3 +132,28 @@ export async function runReminders(): Promise<{ sent: number }> {
   }
   return { sent };
 }
+
+/** 一次性调整：社交媒体旧的阶段顺序（内容制作 → 客户确认）改为（客户确认 → 内容制作），并保留目前所在的阶段 */
+export async function migrateSocialStageOrder(): Promise<number> {
+  const db = adminDb();
+  const OLD = ["stage.brief", "stage.contentPlan", "stage.contentMake", "stage.clientConfirm", "stage.publish", "stage.monthlyReport"].join();
+  const snap = await db.collection("projects").get();
+  let n = 0;
+  for (const d of snap.docs) {
+    const p = d.data() as Project;
+    let changed = false;
+    const services = p.services.map((s) => {
+      if (s.type !== "social" || s.stages.join() !== OLD) return s;
+      changed = true;
+      const stages = [...s.stages];
+      [stages[2], stages[3]] = [stages[3], stages[2]];
+      const current = s.current === 2 ? 3 : s.current === 3 ? 2 : s.current;
+      return { ...s, stages, current };
+    });
+    if (changed) {
+      await d.ref.update({ services });
+      n++;
+    }
+  }
+  return n;
+}

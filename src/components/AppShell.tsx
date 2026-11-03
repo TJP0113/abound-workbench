@@ -158,12 +158,14 @@ export function AppShell({ children }: { children: ReactNode }) {
     const run = () => api("/api/gcal/sync", { pullOnly: true }).catch(() => {});
     const first = setTimeout(run, 3000);
     refreshPush(api);
+    // 管理员打开时做例行检查（社交媒体周期、日常事务、资料调整）
+    if (isAdmin) api("/api/maintenance").catch(() => {});
     const iv = setInterval(run, 5 * 60 * 1000);
     return () => {
       clearTimeout(first);
       clearInterval(iv);
     };
-  }, [state, api]);
+  }, [state, api, isAdmin]);
 
   if (isLogin) return <>{children}</>;
   if (state !== "ready" || !member) return <FullScreenMessage>{t("common.loading")}</FullScreenMessage>;

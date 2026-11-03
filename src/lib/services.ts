@@ -35,7 +35,7 @@ const STAGES: Record<string, string[]> = {
     "ship",
     "deliver",
   ],
-  social: ["brief", "contentPlan", "contentMake", "clientConfirm", "publish", "monthlyReport"],
+  social: ["brief", "contentPlan", "clientConfirm", "contentMake", "publish", "monthlyReport"],
   merch: ["brief", "design", "sample", "confirm", "produce", "deliver"],
   graphic: ["brief", "firstDraft", "revise", "final", "deliverPrint"],
   photo: ["brief", "shootPlan", "shoot", "post", "clientConfirm", "deliver"],
