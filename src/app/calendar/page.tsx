@@ -159,7 +159,7 @@ export default function CalendarPage() {
       </ul>
 
       {view === "month" ? (
-        <div className="overflow-x-auto bg-card border border-line rounded-[14px]">
+        <div className="overflow-x-auto bg-card rounded-[24px]">
           <div className="min-w-[860px]">
             <div className="grid grid-cols-7 border-b border-[#EAEAE5]">
               {weekdays.map((w) => (
@@ -224,7 +224,7 @@ export default function CalendarPage() {
             return (
               <section
                 key={d}
-                className={cx("bg-card border rounded-[14px] p-3 flex flex-col gap-2 min-h-[120px] md:min-h-[420px]", d === today ? "border-accent" : "border-line")}
+                className={cx("bg-card border rounded-[20px] p-3 flex flex-col gap-2 min-h-[120px] md:min-h-[420px]", d === today ? "border-accent" : "border-line")}
               >
                 <button type="button" onClick={() => setForm({ date: d })} className="flex items-baseline justify-between cursor-pointer text-left">
                   <span className="text-[12px] text-muted">{weekdayShort(d, lang)}</span>

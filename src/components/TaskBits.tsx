@@ -72,7 +72,7 @@ export function TaskActions({ task, size = "sm" }: { task: Task; size?: "sm" | "
       );
     if (task.status === "doing" || task.status === "revise")
       buttons.push(
-        <Button key="submit" size={size} variant="primary" disabled={busy} onClick={() => go("review")} className="flex-1">
+        <Button key="submit" size={size} variant="dark" disabled={busy} onClick={() => go("review")} className="flex-1">
           {task.status === "revise" ? t("task.resubmit") : t("task.submit")}
         </Button>
       );

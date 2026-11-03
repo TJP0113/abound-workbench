@@ -82,7 +82,7 @@ function MemberForm({ open, onClose, member }: { open: boolean; onClose: () => v
       </Field>
       {member && (
         <label className="flex items-center gap-2 text-[14px]">
-          <input type="checkbox" className="w-5 h-5 accent-[#2D45C8]" checked={f.active} onChange={(e) => up({ active: e.target.checked })} />
+          <input type="checkbox" className="w-5 h-5 accent-[#EC1C24]" checked={f.active} onChange={(e) => up({ active: e.target.checked })} />
           {t("team.active")}
         </label>
       )}
@@ -111,7 +111,7 @@ export default function TeamPage() {
           </>
         }
       />
-      <div className="bg-card border border-line rounded-[14px] overflow-x-auto">
+      <div className="bg-card rounded-[24px] overflow-x-auto">
         <table className="w-full min-w-[760px] border-collapse text-[14px]">
           <thead>
             <tr className="text-left text-muted text-[12px]">

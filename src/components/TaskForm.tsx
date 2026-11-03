@@ -309,7 +309,7 @@ export function TaskForm({
           <div key={i} className="flex items-center gap-2">
             <input
               type="checkbox"
-              className="w-5 h-5 accent-[#2D45C8]"
+              className="w-5 h-5 accent-[#EC1C24]"
               checked={s.done}
               disabled={ro && !isAssignee}
               aria-label={s.text}

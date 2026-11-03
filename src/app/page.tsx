@@ -8,8 +8,9 @@ import { TopBar } from "@/components/AppShell";
 import { TaskForm } from "@/components/TaskForm";
 import { TaskActions, TaskKindTag } from "@/components/TaskBits";
 import { PushBanner } from "@/components/PushCard";
-import { Avatar, Card, DueLabel, EmptyState, Pill, PRIORITY_COLORS, ProgressBar, Segmented, ServiceTag } from "@/components/ui";
-import { EVENT_COLORS, SERVICE_COLORS } from "@/lib/services";
+import { ProjectForm } from "@/components/ProjectForm";
+import { Avatar, Button, Card, DueLabel, EmptyState, Icon, Pill, ProgressBar, Segmented, ServiceTag, StatusDot, TASK_STATUS_COLORS } from "@/components/ui";
+import { EVENT_COLORS } from "@/lib/services";
 import { currentStage, projectProgress, taskTitle } from "@/lib/project-utils";
 import { buildCalendarItems } from "@/lib/calendar-items";
 import { addDays, daysBetween, dueTone, formatDate, todayStr, weekStart, weekdayShort } from "@/lib/dates";
@@ -20,7 +21,7 @@ const LEAD_DAYS = 7;
 function SectionTitle({ children, aside }: { children: React.ReactNode; aside?: React.ReactNode }) {
   return (
     <div className="flex items-center justify-between gap-3">
-      <h3 className="m-0 text-[15px] font-bold">{children}</h3>
+      <h2 className="m-0 text-[15px] font-semibold">{children}</h2>
       {aside}
     </div>
   );
@@ -31,6 +32,8 @@ export default function Dashboard() {
   const { tasks, projects, events, members } = useData();
   const [range, setRange] = useState<"today" | "week">("today");
   const [open, setOpen] = useState<Task | null>(null);
+  const [creatingTask, setCreatingTask] = useState(false);
+  const [creatingProject, setCreatingProject] = useState(false);
   const today = todayStr();
   const weekEnd = addDays(weekStart(today), 6);
   const me = member!.email;
@@ -50,7 +53,6 @@ export default function Dashboard() {
 
   // ---- 管理员团队总览 ----
   const open_ = projects.filter((p) => p.status === "active" || p.status === "waiting");
-  const dueWeek = open_.filter((p) => p.dueDate >= today && p.dueDate <= weekEnd);
   const overdueTasks = tasks.filter((x) => x.status !== "done" && x.due < today);
   const toReview = tasks.filter((x) => x.status === "review");
   const alerts = [
@@ -62,160 +64,179 @@ export default function Dashboard() {
     .map((m) => ({ m, n: tasks.filter((x) => x.status !== "done" && x.due <= weekEnd && x.assigneeEmails.includes(m.email)).length }));
   const maxLoad = Math.max(8, ...load.map((l) => l.n));
 
+  const taskStatusLabel = (st: Task["status"]) => t(st === "done" ? "status.taskDone" : `status.${st}`);
+
   return (
     <>
       <header className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex flex-col gap-1.5">
-          <h1 className="m-0 text-[26px] sm:text-[28px] font-bold tracking-tight">{t("dash.hello", { name: member!.name })}</h1>
-          <p className="m-0 text-[14px] text-muted">
+        <div className="flex flex-col gap-1">
+          <h1 className="m-0 text-[26px] font-bold tracking-tight">{t("dash.hello", { name: member!.name })}</h1>
+          <p className="m-0 text-[13px] text-muted">
             {formatDate(today, lang)} {weekdayShort(today, lang)} · {isAdmin ? t("dash.adminView") : t("dash.staffView")}
           </p>
         </div>
-        <TopBar />
+        <div className="flex flex-wrap items-center gap-2.5">
+          <TopBar />
+          {isAdmin && (
+            <Button variant="primary" onClick={() => setCreatingProject(true)}>
+              <Icon name="plus" size={16} />
+              {t("proj.new")}
+            </Button>
+          )}
+        </div>
       </header>
 
       <PushBanner />
 
-      <section aria-labelledby="mine" className="flex flex-col gap-3.5">
-        <h2 id="mine" className="m-0 text-[16px] font-bold">
-          {t("dash.mine")}
-        </h2>
-        <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))" }}>
-          <Card className="flex flex-col gap-3.5">
-            <SectionTitle
-              aside={
-                <Segmented
-                  label={t("dash.myTasks")}
-                  value={range}
-                  onChange={setRange}
-                  options={[
-                    { value: "today", label: `${t("dash.today")} ${myToday.length}` },
-                    { value: "week", label: `${t("dash.week")} ${myWeek.length}` },
-                  ]}
-                />
-              }
-            >
-              {t("dash.myTasks")}
-            </SectionTitle>
-            {range === "today" && <p className="m-0 -mt-1.5 text-[12px] text-faint">{t("dash.leadHint", { n: LEAD_DAYS })}</p>}
-            <div className="flex flex-col">
-              {shown.length === 0 && <EmptyState>{t("dash.noTasks")}</EmptyState>}
-              {shown.slice(0, 8).map((x) => (
-                <div key={x.id} className="flex gap-3 py-3 border-t border-line-soft">
-                  <span aria-hidden="true" className="w-1 self-stretch rounded-sm flex-none" style={{ background: PRIORITY_COLORS[x.priority] }} />
+      <div className="grid gap-4 grid-cols-1 lg:grid-cols-2 xl:grid-cols-[300px_minmax(0,1fr)_300px] items-start">
+        {/* 第一栏 */}
+        <div className="flex flex-col gap-4 min-w-0">
+          <section className="rounded-[24px] bg-brand shadow-brand p-1.5 flex flex-col">
+            <div className="flex justify-between items-start gap-3 px-3 pt-3 pb-3.5">
+              <div className="flex flex-col gap-0.5">
+                <h2 className="m-0 text-[15px] font-semibold text-white">{t("dash.todayWork")}</h2>
+                <span className="text-[12px] text-[#FFE3DF]">{t("dash.leadHint", { n: LEAD_DAYS })}</span>
+              </div>
+            </div>
+            <div className="bg-white rounded-[19px] px-4 pt-4 pb-1 flex flex-col gap-1">
+              <span className="text-[12px] text-ink-2">{t("dash.today")}</span>
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-[40px] font-semibold tracking-tight leading-none">{myToday.length}</span>
+                <span className="text-[26px] font-medium text-[#B5AFA7] leading-none">/ {mine.length}</span>
+                <span className="text-[12px] text-muted ml-1">{t("dash.ofTasks")}</span>
+              </div>
+              {isAdmin && (
+                <div className="flex gap-4 text-[12px] text-muted mt-2">
+                  <Link href="/tasks" className="no-underline text-muted hover:text-ink">
+                    {t("dash.overdueTasks")} <b className={overdueTasks.length ? "text-danger" : "text-ink"}>{overdueTasks.length}</b>
+                  </Link>
+                  <Link href="/tasks" className="no-underline text-muted hover:text-ink">
+                    {t("dash.toReview")} <b className="text-ink">{toReview.length}</b>
+                  </Link>
+                </div>
+              )}
+              <div className="grid grid-cols-2 border-t border-line-soft mt-3">
+                <button type="button" onClick={() => setCreatingTask(true)} className="h-12 text-[13px] font-medium flex items-center justify-center gap-1.5 border-r border-line-soft cursor-pointer">
+                  <Icon name="check" size={16} />
+                  {t("task.new")}
+                </button>
+                <Link href="/calendar" className="h-12 text-[13px] font-medium flex items-center justify-center gap-1.5 no-underline">
+                  <Icon name="calendar" size={16} />
+                  {t("dash.openCalendar")}
+                </Link>
+              </div>
+            </div>
+          </section>
+
+          {isAdmin && (
+            <Card className="flex flex-col gap-4">
+              <SectionTitle aside={<span className="text-[12px] text-muted">{t("dash.workloadSub")}</span>}>{t("dash.workload")}</SectionTitle>
+              {load.map(({ m, n }) => (
+                <div key={m.email} className="flex items-center gap-3">
+                  <Avatar name={m.name} email={m.email} size={38} />
                   <div className="flex-1 min-w-0 flex flex-col gap-1.5">
-                    <button type="button" onClick={() => setOpen(x)} className="text-left text-[14px] font-medium cursor-pointer">
-                      {taskTitle(x, lang)}
-                    </button>
-                    <div className="flex flex-wrap items-center gap-2 text-[12px] text-muted">
-                      <TaskKindTag task={x} />
-                      {x.projectName && <span>{x.projectName}</span>}
+                    <div className="flex justify-between text-[13px]">
+                      <span className="truncate">{m.name}</span>
+                      <span className="font-bold">{t("common.items", { n })}</span>
                     </div>
-                    <TaskActions task={x} />
+                    <ProgressBar pct={(n / maxLoad) * 100} />
                   </div>
-                  <DueLabel date={x.due} className="text-[12px]" />
                 </div>
               ))}
-            </div>
-            <Link href="/tasks" className="text-[13px] font-medium no-underline">
-              {t("common.viewAll")} →
-            </Link>
-          </Card>
+            </Card>
+          )}
 
-          <Card className="flex flex-col gap-3.5">
-            <SectionTitle aside={revisions.length > 0 && <Pill bg="#FCE8E8" fg="#A82828">{t("dash.revisionsCount", { n: revisions.length })}</Pill>}>
-              {t("dash.revisions")}
-            </SectionTitle>
-            <div className="flex flex-col gap-2.5">
-              {revisions.length === 0 && <EmptyState>{t("common.none")}</EmptyState>}
+          {revisions.length > 0 && (
+            <Card className="flex flex-col gap-3">
+              <SectionTitle aside={<Pill bg="#FCE8E6" fg="#B3261E" round>{t("dash.revisionsCount", { n: revisions.length })}</Pill>}>
+                {t("dash.revisions")}
+              </SectionTitle>
               {revisions.map((x) => (
-                <div key={x.id} className="flex flex-col gap-2 p-3.5 rounded-[10px] bg-well border border-line-soft">
+                <div key={x.id} className="flex flex-col gap-2 p-3.5 rounded-[16px] bg-well">
                   <div className="flex justify-between gap-2">
                     <button type="button" onClick={() => setOpen(x)} className="text-left text-[14px] font-medium cursor-pointer">
                       {taskTitle(x, lang)}
                     </button>
                     <DueLabel date={x.due} className="text-[12px]" />
                   </div>
-                  <div className="flex flex-wrap items-center gap-2 text-[12px] text-muted">
-                    <TaskKindTag task={x} />
-                    {x.projectName && <span>{x.projectName}</span>}
-                  </div>
+                  {x.projectName && <span className="text-[12px] text-muted">{x.projectName}</span>}
                   {x.reviewNote && (
                     <div className="text-[13px] text-ink-2 leading-relaxed">
                       <span className="text-muted">{t("dash.revisionNote")}</span>
                       {x.reviewNote}
                     </div>
                   )}
-                  <TaskActions task={x} />
+                  <div className="w-fit min-w-[160px]">
+                    <TaskActions task={x} />
+                  </div>
                 </div>
               ))}
-            </div>
-            <p className="m-0 text-[12px] text-faint">{t("dash.whatsapp")}</p>
-          </Card>
-
-          <Card className="flex flex-col gap-3.5">
-            <SectionTitle>{t("dash.events")}</SectionTitle>
-            <div className="flex flex-col">
-              {upcoming.length === 0 && <EmptyState>{t("common.none")}</EmptyState>}
-              {upcoming.map((e) => (
-                <Link key={e.key} href={e.link ?? "/calendar"} className="flex gap-3.5 py-3 border-t border-line-soft items-center no-underline text-ink">
-                  <div className="w-12 flex-none text-center flex flex-col gap-0.5">
-                    <span className="text-[11px] text-muted">{weekdayShort(e.date, lang)}</span>
-                    <span className="text-[20px] font-semibold" style={{ fontFamily: "var(--font-display)" }}>
-                      {Number(e.date.slice(8))}
-                    </span>
-                  </div>
-                  <div className="flex-1 min-w-0 flex flex-col gap-1">
-                    <span className="text-[14px] font-medium truncate">{e.title}</span>
-                    <span className="flex items-center gap-1.5 text-[12px] text-muted">
-                      <span aria-hidden="true" className="w-2 h-2 rounded-full" style={{ background: EVENT_COLORS[e.type].solid }} />
-                      {t(`evt.${e.type}`)}
-                      {e.time ? ` · ${e.time}` : ""}
-                    </span>
-                  </div>
-                </Link>
-              ))}
-            </div>
-            <Link href="/calendar" className="text-[13px] font-medium no-underline">
-              {t("dash.openCalendar")} →
-            </Link>
-          </Card>
+              <p className="m-0 text-[12px] text-muted">{t("dash.whatsapp")}</p>
+            </Card>
+          )}
         </div>
-      </section>
 
-      {isAdmin && (
-        <section aria-labelledby="team" className="flex flex-col gap-3.5">
-          <div className="flex items-baseline gap-2.5">
-            <h2 id="team" className="m-0 text-[16px] font-bold">
-              {t("dash.team")}
-            </h2>
-            <span className="text-[12px] text-faint">{t("dash.adminOnly")}</span>
+        {/* 第二栏：优先处理 */}
+        <Card className="!p-0 flex flex-col overflow-hidden min-w-0 lg:row-span-2 xl:row-span-1">
+          <div className="flex flex-wrap justify-between items-start gap-3 px-5 pt-5 pb-3.5">
+            <div className="flex flex-col gap-0.5">
+              <h2 className="m-0 text-[15px] font-semibold">{t("dash.myTasks")}</h2>
+              <span className="text-[12px] text-muted">{range === "today" ? t("dash.leadHint", { n: LEAD_DAYS }) : t("dash.allOpen")}</span>
+            </div>
+            <Segmented
+              label={t("dash.myTasks")}
+              value={range}
+              onChange={setRange}
+              options={[
+                { value: "today", label: `${t("dash.today")} ${myToday.length}` },
+                { value: "week", label: `${t("dash.week")} ${myWeek.length}` },
+              ]}
+            />
           </div>
-
-          <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" }}>
-            {[
-              { label: t("dash.activeProjects"), value: open_.length, sub: "", color: "#18191B", href: "/projects" },
-              { label: t("dash.dueThisWeek"), value: dueWeek.length, sub: t("dash.dueThisWeekSub"), color: "#8A5A00", href: "/projects" },
-              { label: t("dash.overdueTasks"), value: overdueTasks.length, sub: t("dash.overdueSub"), color: "#A82828", href: "/tasks" },
-              { label: t("dash.toReview"), value: toReview.length, sub: t("dash.toReviewSub"), color: "#2D45C8", href: "/tasks" },
-            ].map((s) => (
-              <Link key={s.label} href={s.href} className="no-underline text-ink bg-card border border-line rounded-[14px] px-5 py-[18px] flex flex-col gap-2 hover:border-[#CFCFC9]">
-                <span className="text-[13px] text-muted">{s.label}</span>
-                <span className="text-[34px] font-semibold leading-none" style={{ fontFamily: "var(--font-display)", color: s.color }}>
-                  {s.value}
-                </span>
-                <span className="text-[12px] text-faint min-h-4">{s.sub}</span>
-              </Link>
-            ))}
+          <div className="hidden sm:grid grid-cols-[minmax(0,1fr)_110px_96px] gap-3 px-5 py-2 border-y border-line-soft text-[11.5px] text-muted">
+            <span>{t("task.title")}</span>
+            <span>{t("task.due")}</span>
+            <span>{t("proj.status")}</span>
           </div>
+          {shown.length === 0 && <EmptyState>{t("dash.noTasks")}</EmptyState>}
+          {shown.slice(0, 12).map((x) => (
+            <div key={x.id} className="grid grid-cols-[minmax(0,1fr)_auto] sm:grid-cols-[minmax(0,1fr)_110px_96px] gap-x-3 gap-y-1.5 items-center px-5 py-3 border-b border-[#F5F3F0]">
+              <div className="min-w-0 flex flex-col gap-1">
+                <button type="button" onClick={() => setOpen(x)} className="text-left text-[13.5px] font-medium cursor-pointer truncate">
+                  {taskTitle(x, lang)}
+                </button>
+                <div className="flex flex-wrap items-center gap-2 text-[11.5px] text-muted">
+                  <TaskKindTag task={x} />
+                  {x.projectName && <span className="truncate">{x.projectName}</span>}
+                </div>
+              </div>
+              <DueLabel date={x.due} className="text-[12px]" />
+              <span className="hidden sm:block">
+                <StatusDot dot={TASK_STATUS_COLORS[x.status][2]}>{taskStatusLabel(x.status)}</StatusDot>
+              </span>
+              <div className="col-span-full w-fit min-w-[160px] empty:hidden">
+                <TaskActions task={x} />
+              </div>
+            </div>
+          ))}
+          <div className="p-3 flex justify-center mt-auto">
+            <Link href="/tasks" className="h-9 px-5 rounded-full border border-line text-[12.5px] font-semibold no-underline flex items-center">
+              {t("common.viewAll")}
+            </Link>
+          </div>
+        </Card>
 
-          <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))" }}>
+        {/* 第三栏 */}
+        <div className="flex flex-col gap-4 min-w-0">
+          {isAdmin && (
             <Card className="flex flex-col gap-4">
-              <SectionTitle>{t("dash.progress")}</SectionTitle>
+              <SectionTitle aside={<Link href="/projects" className="text-[12px] font-semibold text-muted no-underline">{t("common.viewAll")}</Link>}>
+                {t("dash.progress")}
+              </SectionTitle>
               {open_.length === 0 && <EmptyState>{t("proj.empty")}</EmptyState>}
               {[...open_]
                 .sort((a, b) => (a.dueDate || "9").localeCompare(b.dueDate || "9"))
-                .slice(0, 8)
+                .slice(0, 6)
                 .map((p) => {
                   const pct = projectProgress(p, tasks);
                   const cur = currentStage(p);
@@ -223,13 +244,11 @@ export default function Dashboard() {
                   return (
                     <Link key={p.id} href={`/projects/${p.id}`} className="no-underline text-ink flex flex-col gap-2">
                       <div className="flex justify-between gap-3 text-[13px]">
-                        <span className="font-medium">{p.name}</span>
-                        <span className="font-semibold" style={{ fontFamily: "var(--font-display)" }}>
-                          {pct}%
-                        </span>
+                        <span className="font-semibold truncate">{p.name}</span>
+                        <span className="font-bold">{pct}%</span>
                       </div>
-                      <ProgressBar pct={pct} color={SERVICE_COLORS[type][1]} />
-                      <div className="flex flex-wrap gap-2 text-[12px] text-muted items-center">
+                      <ProgressBar pct={pct} />
+                      <div className="flex flex-wrap gap-x-2 gap-y-1 text-[11.5px] text-muted items-center">
                         <ServiceTag type={type} variant={p.services[0]?.variant} label={p.services[0]?.label} />
                         {cur?.stage && <span>{t("dash.current", { stage: stage(cur.stage) })}</span>}
                         {p.dueDate && <span>{t("dash.due", { date: formatDate(p.dueDate, lang) })}</span>}
@@ -238,53 +257,61 @@ export default function Dashboard() {
                   );
                 })}
             </Card>
+          )}
 
-            <Card className="flex flex-col gap-3.5">
+          {isAdmin && alerts.length > 0 && (
+            <Card className="flex flex-col gap-3">
               <SectionTitle>{t("dash.alerts")}</SectionTitle>
-              {alerts.length === 0 && <EmptyState>{t("dash.noAlerts")}</EmptyState>}
-              {alerts.slice(0, 8).map((a) => {
+              {alerts.slice(0, 6).map((a) => {
                 const left = daysBetween(today, a.date);
                 const red = left <= 1;
                 return (
-                  <Link key={a.key} href={a.link} className="no-underline text-ink flex items-center gap-3 px-3.5 py-3 rounded-[10px] bg-well border border-line-soft">
+                  <Link key={a.key} href={a.link} className="no-underline text-ink flex items-center gap-3 p-2.5 rounded-[16px] border border-line-soft hover:bg-well">
                     <span
-                      className="flex-none min-w-[64px] h-6 px-2 box-border rounded-md text-[12px] font-bold inline-flex items-center justify-center"
-                      style={{ background: red ? "#FCE8E8" : "#FBF1DC", color: red ? "#A82828" : "#8A5A00" }}
+                      className="flex-none min-w-[60px] h-6 px-2 box-border rounded-full text-[11.5px] font-bold inline-flex items-center justify-center"
+                      style={{ background: red ? "#FCE8E6" : "#FBF1DC", color: red ? "#B3261E" : "#8A5A00" }}
                     >
                       {left < 0 ? t("common.overdueDays", { n: -left }) : left === 0 ? t("common.today") : left === 1 ? t("common.tomorrow") : t("common.daysLeft", { n: left })}
                     </span>
                     <div className="flex-1 min-w-0 flex flex-col gap-0.5">
-                      <span className="text-[14px] font-medium truncate">{a.title}</span>
-                      <span className="text-[12px] text-muted truncate">{a.meta}</span>
+                      <span className="text-[13px] font-medium truncate">{a.title}</span>
+                      <span className="text-[11.5px] text-muted truncate">{a.meta}</span>
                     </div>
                   </Link>
                 );
               })}
-              <p className="m-0 text-[12px] text-faint">{t("dash.alertsRule")}</p>
             </Card>
+          )}
 
-            <Card className="flex flex-col gap-4">
-              <SectionTitle aside={<span className="text-[12px] text-faint">{t("dash.workloadSub")}</span>}>{t("dash.workload")}</SectionTitle>
-              {load.map(({ m, n }) => (
-                <div key={m.email} className="flex items-center gap-3">
-                  <Avatar name={m.name} email={m.email} size={32} />
-                  <div className="flex-1 min-w-0 flex flex-col gap-1.5">
-                    <div className="flex justify-between text-[13px]">
-                      <span className="truncate">{m.name}</span>
-                      <span className="font-semibold" style={{ fontFamily: "var(--font-display)" }}>
-                        {t("common.items", { n })}
-                      </span>
-                    </div>
-                    <ProgressBar pct={(n / maxLoad) * 100} color={n >= 7 ? "#C98A12" : "#18191B"} />
-                  </div>
+          <Card className="flex flex-col gap-3">
+            <SectionTitle>{t("dash.events")}</SectionTitle>
+            {upcoming.length === 0 && <EmptyState>{t("common.none")}</EmptyState>}
+            {upcoming.map((e) => (
+              <Link key={e.key} href={e.link ?? "/calendar"} className="flex gap-3 p-2.5 rounded-[16px] border border-line-soft items-center no-underline text-ink hover:bg-well">
+                <div className="w-11 h-12 rounded-[12px] bg-paper flex-none flex flex-col items-center justify-center">
+                  <span className="text-[10px] text-muted">{weekdayShort(e.date, lang)}</span>
+                  <span className="text-[17px] font-semibold leading-tight">{Number(e.date.slice(8))}</span>
                 </div>
-              ))}
-            </Card>
-          </div>
-        </section>
-      )}
+                <div className="flex-1 min-w-0 flex flex-col gap-1">
+                  <span className="text-[13px] font-medium truncate">{e.title}</span>
+                  <span className="flex items-center gap-1.5 text-[11.5px] text-muted">
+                    <span aria-hidden="true" className="w-1.5 h-1.5 rounded-full" style={{ background: EVENT_COLORS[e.type].solid }} />
+                    {t(`evt.${e.type}`)}
+                    {e.time ? ` · ${e.time}` : ""}
+                  </span>
+                </div>
+              </Link>
+            ))}
+            <Link href="/calendar" className="h-11 mt-1 rounded-full bg-[#2A2724] text-white text-[13px] font-semibold no-underline flex items-center justify-center hover:bg-black hover:text-white">
+              {t("dash.openCalendar")}
+            </Link>
+          </Card>
+        </div>
+      </div>
 
       {open && <TaskForm open task={open} onClose={() => setOpen(null)} />}
+      {creatingTask && <TaskForm open onClose={() => setCreatingTask(false)} />}
+      {creatingProject && <ProjectForm open onClose={() => setCreatingProject(false)} />}
     </>
   );
 }

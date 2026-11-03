@@ -224,7 +224,7 @@ export function ProjectForm({ open, onClose, project }: { open: boolean; onClose
           </Button>
         </div>
         {f.services.map((s, i) => (
-          <div key={i} className="border border-line rounded-[12px] p-4 flex flex-col gap-3 bg-well">
+          <div key={i} className="rounded-[18px] p-4 flex flex-col gap-3 bg-well">
             <div className="flex flex-wrap items-end gap-3">
               <Field label={t("proj.services")}>
                 <select className="field" value={s.type} onChange={(e) => changeType(i, e.target.value as ServiceType)}>

@@ -137,11 +137,11 @@ export function OrderFormsPanel({ project }: { project: Project }) {
       {forms.length === 0 && <EmptyState>{t("of.empty")}</EmptyState>}
 
       {forms.length > 0 && (
-        <div className="flex flex-wrap items-center gap-3 px-3 py-2.5 rounded-[10px] bg-well border border-line-soft">
+        <div className="flex flex-wrap items-center gap-3 px-3 py-2.5 rounded-[16px] bg-well">
           <label className="flex items-center gap-2 text-[13px] cursor-pointer">
             <input
               type="checkbox"
-              className="w-5 h-5 accent-[#2D45C8]"
+              className="w-5 h-5 accent-[#EC1C24]"
               checked={allOn}
               onChange={(e) => setSelected(e.target.checked ? forms.map((f) => f.id) : [])}
             />
@@ -174,7 +174,7 @@ export function OrderFormsPanel({ project }: { project: Project }) {
             <input
               type="checkbox"
               aria-label={f.title || f.jobName || "ORDER FORM"}
-              className="w-5 h-5 accent-[#2D45C8] flex-none"
+              className="w-5 h-5 accent-[#EC1C24] flex-none"
               checked={selected.includes(f.id)}
               onChange={(e) => setSelected((s) => (e.target.checked ? [...s, f.id] : s.filter((x) => x !== f.id)))}
             />

@@ -12,7 +12,7 @@ import { TaskForm } from "@/components/TaskForm";
 import { OutsourcingPanel } from "@/components/OutsourcingPanel";
 import { OrderFormsPanel } from "@/components/OrderFormsPanel";
 import { TaskActions } from "@/components/TaskBits";
-import { Button, Card, DueLabel, EmptyState, Icon, PROJECT_STATUS_COLORS, Pill, ServiceTag, TASK_STATUS_COLORS, cx } from "@/components/ui";
+import { Button, Card, DueLabel, EmptyState, Icon, ServiceTag, StatusDot, TASK_STATUS_COLORS, cx } from "@/components/ui";
 import { useActions } from "@/lib/actions";
 import { EVENT_COLORS } from "@/lib/services";
 import { projectProgress, serviceProgressWithTasks, socialCycleProgress, taskTitle } from "@/lib/project-utils";
@@ -50,7 +50,7 @@ function StageTrack({ project, svc, index }: { project: Project; svc: ProjectSer
             <Button size="sm" variant="ghost" disabled={svc.current <= 0} onClick={() => setCurrent(svc.current - 1)}>
               {t("proj.backStage")}
             </Button>
-            <Button size="sm" variant="dark" disabled={svc.current >= svc.stages.length} onClick={() => setCurrent(svc.current + 1)}>
+            <Button size="sm" variant="primary" disabled={svc.current >= svc.stages.length} onClick={() => setCurrent(svc.current + 1)}>
               {t("proj.completeStage")}
             </Button>
           </div>
@@ -64,24 +64,22 @@ function StageTrack({ project, svc, index }: { project: Project; svc: ProjectSer
             <li
               key={`${s}-${i}`}
               className={cx(
-                "flex flex-col gap-2 p-3 rounded-[10px] min-h-[76px] box-border border",
-                now ? "bg-accent-soft border-[#B9C3F2]" : "bg-well border-line-soft"
+                "flex flex-col gap-2 p-3 rounded-[16px] min-h-[76px] box-border border",
+                now ? "bg-brand text-white border-transparent shadow-[0_6px_14px_rgba(236,28,36,.2)]" : done ? "bg-paper border-transparent" : "bg-white border-line-soft"
               )}
             >
               <div className="flex items-center gap-2">
                 <span
                   aria-hidden="true"
-                  className="w-[22px] h-[22px] rounded-full flex items-center justify-center text-[11px] font-semibold border"
+                  className="w-[22px] h-[22px] rounded-full flex items-center justify-center text-[11px] font-bold"
                   style={{
-                    fontFamily: "var(--font-display)",
-                    background: now ? "#2D45C8" : done ? "#18191B" : "#fff",
-                    color: now || done ? "#fff" : "#5F6166",
-                    borderColor: now ? "#2D45C8" : done ? "#18191B" : "#CFCFC9",
+                    background: now ? "#fff" : done ? "#1C1A18" : "#F3F2EF",
+                    color: now ? "#EC1C24" : done ? "#fff" : "#57524C",
                   }}
                 >
                   {done ? "✓" : i + 1}
                 </span>
-                <span className="text-[11px] text-muted">
+                <span className={cx("text-[11px]", now ? "text-white/85" : "text-muted")}>
                   {t(done ? "proj.stageState.done" : now ? "proj.stageState.now" : "proj.stageState.todo")}
                 </span>
               </div>
@@ -150,13 +148,10 @@ function SocialPanel({ project }: { project: Project }) {
 function TaskRow({ task, onOpen }: { task: Task; onOpen: () => void }) {
   const { t, lang } = useAuth();
   const { memberName } = useData();
-  const [bg, fg] = TASK_STATUS_COLORS[task.status];
   const done = task.status === "done";
   return (
     <div className="flex flex-wrap items-center gap-3 py-3.5 border-t border-line-soft">
-      <Pill bg={bg} fg={fg}>
-        {t(done ? "status.taskDone" : `status.${task.status}`)}
-      </Pill>
+      <StatusDot dot={TASK_STATUS_COLORS[task.status][2]}>{t(done ? "status.taskDone" : `status.${task.status}`)}</StatusDot>
       <button type="button" onClick={onOpen} className="flex-[1_1_220px] min-w-0 text-left flex flex-col gap-1 cursor-pointer">
         <span className={cx("text-[14px] font-medium", done ? "text-muted line-through" : "text-ink")}>{taskTitle(task, lang)}</span>
         {task.status === "revise" && task.reviewNote ? (
@@ -212,7 +207,6 @@ export default function ProjectDetail({ params }: { params: Promise<{ id: string
   const visibleTasks = isSocial ? ptasks.filter((x) => !x.cycle || x.cycle === month) : ptasks;
   const hasUniform = project.services.some((s) => s.type === "uniform");
   const pct = projectProgress(project, tasks);
-  const [sbg, sfg] = PROJECT_STATUS_COLORS[project.status];
 
   const schedule = [
     { date: project.dueDate, title: t("evt.deliveryShort"), type: "delivery" as const },
@@ -231,7 +225,8 @@ export default function ProjectDetail({ params }: { params: Promise<{ id: string
     <>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <nav aria-label="Breadcrumb" className="text-[13px] text-muted flex gap-2 items-center">
-          <Link href="/projects" className="no-underline">
+          <Link href="/projects" className="no-underline h-9 pl-2.5 pr-4 rounded-full bg-white border border-line text-ink font-semibold flex items-center gap-1">
+            <Icon name="left" size={15} />
             {t("nav.projects")}
           </Link>
           <span aria-hidden="true">/</span>
@@ -240,65 +235,75 @@ export default function ProjectDetail({ params }: { params: Promise<{ id: string
         <TopBar />
       </div>
 
-      <Card className="flex flex-col gap-6 !p-6 !rounded-[16px]">
-        <div className="flex flex-wrap justify-between gap-4">
-          <div className="flex flex-col gap-2.5">
-            <div className="flex flex-wrap gap-2">
+      <section className="rounded-[26px] bg-brand shadow-brand p-1.5 flex flex-col">
+        <div className="flex flex-wrap justify-between items-start gap-4 px-4 pt-4 pb-4">
+          <div className="flex flex-col gap-2 min-w-0">
+            <div className="flex flex-wrap gap-1.5">
               {project.services.map((s, i) => (
                 <ServiceTag key={i} type={s.type} variant={s.variant} label={s.label} />
               ))}
-              <Pill bg={sbg} fg={sfg} round>
+              <span className="inline-flex items-center gap-1.5 h-6 px-2.5 rounded-full bg-white/20 text-white text-[12px] font-semibold">
+                <span aria-hidden="true" className="w-1.5 h-1.5 rounded-full bg-white" />
                 {t(`status.${project.status}`)}
-              </Pill>
+              </span>
             </div>
-            <h1 className="m-0 text-[26px] font-bold">{project.name}</h1>
-            <p className="m-0 text-[14px] text-muted">
+            <h1 className="m-0 text-[26px] font-bold text-white">{project.name}</h1>
+            <p className="m-0 text-[13px] text-[#FFE3DF]">
               {project.client && `${t("proj.client")}：${project.client} · `}
               {t("proj.owner")}：{memberName(project.ownerEmail)} · {t("proj.members")}：{project.memberEmails.map(memberName).join("、")}
             </p>
           </div>
-          <div className="flex flex-wrap gap-7 items-start">
+          {isAdmin && (
+            <div className="flex gap-2">
+              <button type="button" onClick={() => setEditing(true)} className="h-10 px-4 rounded-full text-white hover:brightness-110 text-[13px] font-semibold cursor-pointer" style={{ background: "rgba(255,255,255,.18)" }}>
+                {t("common.edit")}
+              </button>
+              <button type="button" onClick={() => setDuplicating(true)} className="h-10 px-4 rounded-full text-white text-[13px] font-semibold cursor-pointer hover:brightness-110" style={{ background: "rgba(255,255,255,.18)" }}>
+                {t("dup.button")}
+              </button>
+              <button
+                type="button"
+                aria-label={t("common.delete")}
+                title={t("common.delete")}
+                className="w-10 h-10 rounded-full text-white flex items-center justify-center cursor-pointer hover:brightness-110"
+                style={{ background: "rgba(255,255,255,.18)" }}
+                onClick={async () => {
+                  if (!confirm(t("proj.deleteConfirm"))) return;
+                  await deleteProject(project.id);
+                  router.push("/projects");
+                }}
+              >
+                <Icon name="trash" size={16} />
+              </button>
+            </div>
+          )}
+        </div>
+        <div className="bg-white rounded-[21px] p-5 flex flex-col gap-5">
+          <div className="flex flex-wrap gap-8 items-start">
             <div className="flex flex-col gap-1">
               <span className="text-[12px] text-muted">{t("proj.start")}</span>
-              <span className="text-[15px] font-medium">{formatDate(project.startDate, lang)}</span>
+              <span className="text-[15px] font-semibold">{formatDate(project.startDate, lang)}</span>
             </div>
             <div className="flex flex-col gap-1">
               <span className="text-[12px] text-muted">{t("proj.due")}</span>
-              <DueLabel date={project.dueDate} done={project.status === "done" || project.status === "cancelled"} className="text-[15px]" />
+              <DueLabel date={project.dueDate} done={project.status === "done" || project.status === "cancelled"} className="text-[15px] font-semibold" />
             </div>
             <div className="flex flex-col gap-1">
               <span className="text-[12px] text-muted">{t("proj.progress")}</span>
-              <span className="text-[18px] font-semibold" style={{ fontFamily: "var(--font-display)" }}>
-                {pct}%
+              <span className="text-[15px] font-semibold">
+                {pct}
+                <span className="text-[#B5AFA7]">%</span>
               </span>
             </div>
-            {isAdmin && (
-              <div className="flex gap-2">
-                <Button onClick={() => setEditing(true)}>{t("common.edit")}</Button>
-                <Button onClick={() => setDuplicating(true)}>{t("dup.button")}</Button>
-                <Button
-                  variant="danger"
-                  aria-label={t("common.delete")}
-                  onClick={async () => {
-                    if (!confirm(t("proj.deleteConfirm"))) return;
-                    await deleteProject(project.id);
-                    router.push("/projects");
-                  }}
-                >
-                  <Icon name="trash" size={16} />
-                </Button>
-              </div>
-            )}
+          </div>
+          <div className="flex flex-col gap-5">
+            <h2 className="m-0 text-[15px] font-semibold">{t("proj.stages")}</h2>
+            {project.services.map((s, i) => (
+              <StageTrack key={i} project={project} svc={s} index={i} />
+            ))}
           </div>
         </div>
-
-        <div className="flex flex-col gap-5">
-          <h2 className="m-0 text-[15px] font-bold">{t("proj.stages")}</h2>
-          {project.services.map((s, i) => (
-            <StageTrack key={i} project={project} svc={s} index={i} />
-          ))}
-        </div>
-      </Card>
+      </section>
 
       <div className="flex flex-wrap gap-5 items-start">
         <div className="flex-[2_1_560px] min-w-0 flex flex-col gap-5">

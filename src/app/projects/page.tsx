@@ -13,7 +13,8 @@ import {
   DueLabel,
   EmptyState,
   Icon,
-  PROJECT_STATUS_COLORS,
+  PROJECT_STATUS_DOT,
+  StatusDot,
   PageHeader,
   Pill,
   ProgressBar,
@@ -46,7 +47,7 @@ function ListView({ projects }: { projects: Project[] }) {
   };
 
   return (
-    <div className="bg-card border border-line rounded-[14px] overflow-hidden text-[14px]" role="table">
+    <div className="bg-card rounded-[24px] overflow-hidden text-[14px]" role="table">
       <div role="row" className="hidden xl:grid text-left text-muted text-[12px] border-b border-[#EAEAE5]" style={{ gridTemplateColumns: LIST_COLS }}>
         {["proj.name", "proj.services", "proj.stage", "proj.progress", "proj.owner", "proj.due", "proj.status"].map((k, i) => (
           <div key={k} role="columnheader" className={cx("py-3.5 font-medium", i === 0 ? "px-5" : "px-3")}>
@@ -58,8 +59,6 @@ function ListView({ projects }: { projects: Project[] }) {
         const cur = currentStage(p);
         const pct = projectProgress(p, tasks);
         const social = socialCycleProgress(p, tasks);
-        const [sbg, sfg] = PROJECT_STATUS_COLORS[p.status];
-        const color = SERVICE_COLORS[p.services[0]?.type ?? "brand"][1];
         const stageText = cur?.stage ? stage(cur.stage) : cur?.svc.stages.length === 0 ? "—" : t("proj.allDone");
         const stageSub = social
           ? t("social.cycleProgress", { a: social.done, b: social.total })
@@ -76,7 +75,7 @@ function ListView({ projects }: { projects: Project[] }) {
         const progress = (
           <div className="flex items-center gap-2.5">
             <div className="flex-1">
-              <ProgressBar pct={pct} color={color} />
+              <ProgressBar pct={pct} />
             </div>
             <span className="w-9 text-right text-[13px] font-semibold" style={{ fontFamily: "var(--font-display)" }}>
               {pct}%
@@ -84,9 +83,7 @@ function ListView({ projects }: { projects: Project[] }) {
           </div>
         );
         const status = (
-          <Pill bg={sbg} fg={sfg} round>
-            {t(`status.${p.status}`)}
-          </Pill>
+          <StatusDot dot={PROJECT_STATUS_DOT[p.status]}>{t(`status.${p.status}`)}</StatusDot>
         );
         const due = <DueLabel date={p.dueDate} done={p.status === "done" || p.status === "cancelled"} />;
         return (
@@ -220,7 +217,7 @@ function BoardView({ projects }: { projects: Project[] }) {
                 key={col}
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={() => drop(col)}
-                className="bg-[#EBEBE6] rounded-[14px] p-2.5 flex flex-col gap-2 min-h-[160px]"
+                className="bg-[#E9E6E1] rounded-[20px] p-2.5 flex flex-col gap-2 min-h-[160px]"
               >
                 <h2 className="m-0 px-1.5 py-1 text-[13px] font-bold flex justify-between">
                   <span>{col === "__done" ? t("proj.allDone") : stage(col)}</span>
@@ -234,7 +231,7 @@ function BoardView({ projects }: { projects: Project[] }) {
                     draggable
                     onDragStart={() => setDragging(`${p.id}#${i}`)}
                     onDragEnd={() => setDragging(null)}
-                    className="bg-white border border-[#E2E2DD] rounded-[10px] p-3 flex flex-col gap-1.5 cursor-grab active:cursor-grabbing"
+                    className="bg-white rounded-[14px] p-3 flex flex-col gap-1.5 cursor-grab active:cursor-grabbing"
                   >
                     <Link href={`/projects/${p.id}`} className="text-[14px] font-medium text-ink no-underline hover:underline">
                       {p.name}
@@ -272,7 +269,7 @@ function TimelineView({ projects }: { projects: Project[] }) {
     ticks.push(m.toISOString().slice(0, 10));
 
   return (
-    <div className="bg-card border border-line rounded-[14px] overflow-x-auto">
+    <div className="bg-card rounded-[24px] overflow-x-auto">
       <div className="min-w-[900px] p-5 flex flex-col gap-1">
         <div className="relative h-6 ml-[220px] text-[12px] text-muted">
           {ticks.map((d) => (
@@ -368,8 +365,8 @@ export default function ProjectsPage() {
             aria-pressed={svc === "all"}
             onClick={() => setSvc("all")}
             className={cx(
-              "h-9 px-3.5 rounded-full text-[13px] border cursor-pointer",
-              svc === "all" ? "bg-ink text-white border-ink" : "bg-white border-[#DCDCD6] text-ink-2"
+              "h-9 px-4 rounded-full text-[13px] font-medium border cursor-pointer",
+              svc === "all" ? "bg-brand text-white border-transparent shadow-[0_4px_10px_rgba(236,28,36,.2)]" : "bg-white border-line text-ink-2"
             )}
           >
             {t("common.all")} {projects.length}
@@ -381,20 +378,20 @@ export default function ProjectsPage() {
               aria-pressed={svc === s}
               onClick={() => setSvc(s)}
               className={cx(
-                "h-9 px-3.5 rounded-full text-[13px] border cursor-pointer flex items-center gap-2",
-                svc === s ? "bg-ink text-white border-ink" : "bg-white border-[#DCDCD6] text-ink-2"
+                "h-9 px-4 rounded-full text-[13px] font-medium border cursor-pointer flex items-center gap-2",
+                svc === s ? "bg-brand text-white border-transparent shadow-[0_4px_10px_rgba(236,28,36,.2)]" : "bg-white border-line text-ink-2"
               )}
             >
-              <span aria-hidden="true" className="w-2 h-2 rounded-full" style={{ background: SERVICE_COLORS[s][1] }} />
+              <span aria-hidden="true" className={cx("w-2 h-2 rounded-full", svc === s && "ring-2 ring-white")} style={{ background: SERVICE_COLORS[s][1] }} />
               {t(`svc.${s}`)} {counts[s] || 0}
             </button>
           ))}
         </div>
         <div className="flex flex-wrap items-center gap-2.5">
-          <input className="field !w-[200px]" type="search" placeholder={t("common.search")} aria-label={t("common.search")} value={q} onChange={(e) => setQ(e.target.value)} />
+          <input className="field !w-[200px] !rounded-full !px-4" type="search" placeholder={t("common.search")} aria-label={t("common.search")} value={q} onChange={(e) => setQ(e.target.value)} />
           <label className="flex items-center gap-2 text-[13px] text-muted">
             {t("proj.status")}
-            <select className="field !w-auto" value={status} onChange={(e) => setStatus(e.target.value as typeof status)}>
+            <select className="field !w-auto !rounded-full !px-4" value={status} onChange={(e) => setStatus(e.target.value as typeof status)}>
               {STATUS_FILTERS.map((s) => (
                 <option key={s} value={s}>
                   {s === "all" ? t("common.all") : s === "open" ? `${t("status.active")} / ${t("status.waiting")} / ${t("status.paused")}` : t(`status.${s}`)}
@@ -413,7 +410,7 @@ export default function ProjectsPage() {
             ]}
           />
           {isAdmin && (
-            <Button variant="ghost" onClick={() => setTrashOpen(true)}>
+            <Button onClick={() => setTrashOpen(true)}>
               <Icon name="trash" size={16} />
               {t("trash.title")}
               {trash.length > 0 && ` ${trash.length}`}

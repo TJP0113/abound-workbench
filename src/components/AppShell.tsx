@@ -29,7 +29,7 @@ export function LangToggle({ dark }: { dark?: boolean }) {
     <div
       role="group"
       aria-label="Language / 界面语言"
-      className={cx("flex p-[3px] rounded-[10px] h-11 box-border", dark ? "bg-[#2C2E33]" : "border border-[#E1E1DC] bg-white")}
+      className={cx("flex p-[3px] rounded-full h-11 box-border", dark ? "bg-[#2C2926]" : "border border-line bg-white")}
     >
       {(["zh", "en"] as const).map((l) => (
         <button
@@ -38,10 +38,9 @@ export function LangToggle({ dark }: { dark?: boolean }) {
           aria-pressed={lang === l}
           onClick={() => setLang(l)}
           className={cx(
-            "px-3 rounded-[7px] text-[13px] font-medium cursor-pointer",
+            "px-3.5 rounded-full text-[12.5px] font-semibold cursor-pointer",
             lang === l ? (dark ? "bg-white text-ink" : "bg-ink text-white") : dark ? "text-[#C9CAD0]" : "text-muted"
           )}
-          style={l === "en" ? { fontFamily: "var(--font-display)" } : undefined}
         >
           {l === "zh" ? "中文" : "EN"}
         </button>
@@ -75,24 +74,24 @@ function NotificationBell() {
         aria-label={`${t("notif.title")}${unread.length ? ` (${unread.length})` : ""}`}
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
-        className="relative w-11 h-11 rounded-[10px] border border-[#E1E1DC] bg-white flex items-center justify-center cursor-pointer"
+        className="relative w-11 h-11 rounded-full border border-line bg-white flex items-center justify-center cursor-pointer text-ink"
       >
         <Icon name="bell" />
         {unread.length > 0 && (
           <span
             aria-hidden="true"
-            className="absolute top-1.5 right-1.5 min-w-4 h-4 px-1 rounded-full bg-[#C42B2B] text-white text-[10px] font-bold flex items-center justify-center"
+            className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-brand text-white text-[10px] font-bold flex items-center justify-center ring-2 ring-white"
           >
             {unread.length > 9 ? "9+" : unread.length}
           </span>
         )}
       </button>
       {open && (
-        <div className="absolute right-0 top-[52px] z-30 w-[min(360px,calc(100vw-32px))] bg-white border border-line rounded-[14px] shadow-[0_12px_32px_rgba(0,0,0,.12)] overflow-hidden">
+        <div className="absolute right-0 top-[52px] z-30 w-[min(360px,calc(100vw-32px))] bg-white rounded-[20px] shadow-[0_16px_40px_rgba(0,0,0,.16)] overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 border-b border-line-soft">
             <span className="text-[14px] font-bold">{t("notif.title")}</span>
             {unread.length > 0 && (
-              <button type="button" className="text-[12px] text-accent cursor-pointer" onClick={() => markRead(unread.map((n) => n.id))}>
+              <button type="button" className="text-[12px] font-semibold text-accent-dark cursor-pointer" onClick={() => markRead(unread.map((n) => n.id))}>
                 {t("notif.markAll")}
               </button>
             )}
@@ -110,10 +109,10 @@ function NotificationBell() {
                 }}
                 className={cx(
                   "w-full text-left px-4 py-3 border-b border-line-soft flex gap-3 cursor-pointer hover:bg-well",
-                  !n.read && "bg-[#F5F7FE]"
+                  !n.read && "bg-[#FFF6F4]"
                 )}
               >
-                <span aria-hidden="true" className={cx("mt-1.5 w-2 h-2 rounded-full flex-none", n.read ? "bg-transparent" : "bg-accent")} />
+                <span aria-hidden="true" className={cx("mt-1.5 w-2 h-2 rounded-full flex-none", n.read ? "bg-transparent" : "bg-brand")} />
                 <span className="flex flex-col gap-1">
                   <span className="text-[13px] leading-snug">{lang === "zh" ? n.text : n.textEn}</span>
                   <span className="text-[11px] text-faint">{formatDateTime(n.createdAt, lang)}</span>
@@ -141,7 +140,7 @@ function FullScreenMessage({ children }: { children: ReactNode }) {
 }
 
 export function AppShell({ children }: { children: ReactNode }) {
-  const { state, member, isAdmin, t, signOut, api } = useAuth();
+  const { state, member, isAdmin, t, lang, signOut, api } = useAuth();
   const { loaded } = useData();
   const path = usePathname();
   const router = useRouter();
@@ -174,71 +173,91 @@ export function AppShell({ children }: { children: ReactNode }) {
   // 手机底部最多 5 个：不放「员工」，确保「设置」（开启通知）一定在
   const mobileItems = items.filter((n) => n.href !== "/team");
 
-  return (
-    <div className="min-h-screen md:flex">
-      <nav
-        aria-label="Main"
-        className="hidden md:flex md:w-[232px] md:flex-none bg-nav text-[#C9CAD0] px-4 py-7 box-border flex-col gap-7 md:sticky md:top-0 md:h-screen"
-      >
-        <div className="px-3 flex flex-col gap-1">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo-on-dark.png" alt="ABOUND CREATION" className="h-[38px] w-auto self-start" />
-          <div className="text-[12px] text-[#A3A5AC] mt-1.5">{t("app.sub")}</div>
-        </div>
-        <div className="flex flex-col gap-1">
-          {items.map((n) => {
-            const active = isActive(path, n.href);
-            return (
-              <Link
-                key={n.href}
-                href={n.href}
-                aria-current={active ? "page" : undefined}
-                className={cx(
-                  "flex items-center gap-3 min-h-11 px-3 rounded-[10px] no-underline text-[15px]",
-                  active ? "bg-[#2C2E33] text-white font-medium" : "text-[#C9CAD0] hover:text-white hover:bg-[#222327]"
-                )}
-              >
-                <Icon name={n.icon} />
-                {t(n.key)}
-              </Link>
-            );
-          })}
-        </div>
-        <div className="mt-auto flex flex-col gap-2">
-          <div className="flex items-center gap-2.5 p-3 rounded-xl bg-[#222327]">
-            <Avatar name={member.name} email={member.email} size={36} />
-            <div className="flex flex-col gap-0.5 min-w-0">
-              <span className="text-[14px] text-white truncate">{member.name}</span>
-              <span className="text-[12px] text-[#A3A5AC]">{t(`role.${member.role}`)}</span>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={() => signOut()}
-            className="flex items-center gap-3 min-h-11 px-3 rounded-[10px] text-[14px] text-[#C9CAD0] hover:text-white hover:bg-[#222327] cursor-pointer"
-          >
-            <Icon name="logout" />
-            {t("nav.signOut")}
-          </button>
-        </div>
-      </nav>
+  const lastBackup = member.lastBackupAt || 0;
+  const backupDue = isAdmin && Date.now() - lastBackup > 30 * 86400000;
 
-      <div className="flex-1 min-w-0 pb-[84px] md:pb-0">
-        <div className="md:hidden bg-nav text-white px-4 py-3 flex items-center justify-between">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo-on-dark.png" alt="ABOUND CREATION" className="h-[28px] w-auto" />
-          <button type="button" onClick={() => signOut()} aria-label={t("nav.signOut")} className="w-11 h-11 flex items-center justify-center text-[#C9CAD0] cursor-pointer">
-            <Icon name="logout" />
-          </button>
+  return (
+    <div className="min-h-screen bg-paper md:bg-frame md:p-3">
+      <div className="md:flex md:gap-2.5 md:p-2.5 md:rounded-[32px] md:bg-nav md:min-h-[calc(100vh-24px)]">
+        <nav
+          aria-label="Main"
+          className="hidden md:flex md:w-[248px] md:flex-none flex-col gap-4 px-1 pt-3.5 pb-1 md:sticky md:top-[22px] md:h-[calc(100vh-44px)] box-border"
+        >
+          <div className="px-3 flex flex-col gap-1.5">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo-on-dark.png" alt="ABOUND CREATION" className="h-[32px] w-auto self-start" />
+            <div className="text-[11.5px] text-[#A39D95]">{t("app.sub")}</div>
+          </div>
+          <div className="flex flex-col gap-0.5 p-2 rounded-[24px] bg-nav-card">
+            {items.map((n) => {
+              const active = isActive(path, n.href);
+              return (
+                <Link
+                  key={n.href}
+                  href={n.href}
+                  aria-current={active ? "page" : undefined}
+                  className={cx(
+                    "flex items-center gap-3 min-h-12 px-2 rounded-[16px] no-underline text-[14px] transition-colors",
+                    active ? "bg-nav-item text-white font-semibold" : "text-[#C9C4BD] hover:text-white hover:bg-[#322E2B]"
+                  )}
+                >
+                  <span className={cx("w-[34px] h-[34px] rounded-full flex items-center justify-center flex-none", active ? "bg-brand text-white" : "bg-[#34302D]")}>
+                    <Icon name={n.icon} size={17} />
+                  </span>
+                  {t(n.key)}
+                </Link>
+              );
+            })}
+          </div>
+          <div className="flex-1" />
+          {backupDue && (
+            <div className="bg-white rounded-[22px] p-4 flex flex-col gap-3">
+              <div className="flex flex-col gap-1">
+                <span className="text-[13px] font-semibold text-ink">{t("backup.title")}</span>
+                <span className="text-[11.5px] leading-snug text-muted">
+                  {lastBackup ? t("backup.last", { time: formatDateTime(lastBackup, lang) }) : t("backup.never")}
+                </span>
+              </div>
+              <Link href="/settings#backup" className="h-10 rounded-full bg-well text-ink text-[13px] font-semibold no-underline flex items-center justify-center hover:bg-[#EFECE8]">
+                {t("backup.export")}
+              </Link>
+            </div>
+          )}
+          <div className="flex items-center gap-2.5 p-3 rounded-[22px] bg-nav-card">
+            <Avatar name={member.name} email={member.email} size={40} />
+            <div className="flex flex-col gap-0.5 min-w-0 flex-1">
+              <span className="text-[13.5px] text-white font-medium truncate">{member.name}</span>
+              <span className="text-[11.5px] text-[#A39D95]">{t(`role.${member.role}`)}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => signOut()}
+              aria-label={t("nav.signOut")}
+              title={t("nav.signOut")}
+              className="w-10 h-10 rounded-full flex items-center justify-center text-[#C9C4BD] hover:text-white hover:bg-[#34302D] cursor-pointer"
+            >
+              <Icon name="logout" size={17} />
+            </button>
+          </div>
+        </nav>
+
+        <div className="flex-1 min-w-0 pb-[96px] md:pb-0 md:bg-paper md:rounded-[26px]">
+          <div className="md:hidden bg-nav text-white px-4 py-3 flex items-center justify-between rounded-b-[24px]">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo-on-dark.png" alt="ABOUND CREATION" className="h-[28px] w-auto" />
+            <button type="button" onClick={() => signOut()} aria-label={t("nav.signOut")} className="w-11 h-11 rounded-full flex items-center justify-center text-[#C9C4BD] cursor-pointer">
+              <Icon name="logout" />
+            </button>
+          </div>
+          <main className="px-4 sm:px-6 lg:px-7 pt-5 pb-10 flex flex-col gap-5 max-w-[1600px]">
+            {loaded ? children : <div className="text-[14px] text-muted py-10">{t("common.loading")}</div>}
+          </main>
         </div>
-        <main className="px-4 sm:px-6 lg:px-10 pt-6 pb-12 flex flex-col gap-6 max-w-[1600px]">
-          {loaded ? children : <div className="text-[14px] text-muted py-10">{t("common.loading")}</div>}
-        </main>
       </div>
 
       <nav
         aria-label="Mobile"
-        className="md:hidden fixed bottom-0 inset-x-0 z-20 grid bg-white border-t border-line px-2 pt-1.5 pb-4"
+        className="md:hidden fixed bottom-3 inset-x-3 z-20 grid bg-nav rounded-[26px] p-1.5 shadow-[0_10px_30px_rgba(0,0,0,.25)]"
         style={{ gridTemplateColumns: `repeat(${mobileItems.length}, minmax(0, 1fr))` }}
       >
         {mobileItems.map((n) => {
@@ -249,11 +268,11 @@ export function AppShell({ children }: { children: ReactNode }) {
               href={n.href}
               aria-current={active ? "page" : undefined}
               className={cx(
-                "min-h-[52px] flex flex-col items-center justify-center gap-1 no-underline text-[11px]",
-                active ? "text-accent font-bold" : "text-muted"
+                "min-h-[54px] rounded-[20px] flex flex-col items-center justify-center gap-1 no-underline text-[10.5px] font-medium",
+                active ? "bg-brand text-white" : "text-[#A39D95] hover:text-white"
               )}
             >
-              <Icon name={n.icon} size={20} />
+              <Icon name={n.icon} size={19} />
               {t(n.key)}
             </Link>
           );

@@ -126,7 +126,7 @@ export function EventForm({ open, onClose, event, date }: { open: boolean; onClo
           </Field>
         </div>
         <label className="flex items-center gap-2 text-[14px]">
-          <input type="checkbox" className="w-5 h-5 accent-[#2D45C8]" checked={f.allDay} onChange={(e) => up({ allDay: e.target.checked })} />
+          <input type="checkbox" className="w-5 h-5 accent-[#EC1C24]" checked={f.allDay} onChange={(e) => up({ allDay: e.target.checked })} />
           {t("cal.allDay")}
         </label>
         {!f.allDay && (

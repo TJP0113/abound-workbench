@@ -46,7 +46,7 @@ export default function LoginPage() {
             <img src="/logo-on-dark.png" alt="ABOUND CREATION" className="h-[56px] w-auto self-start" />
             <div className="text-[14px] text-[#A3A5AC]">{t("app.sub")}</div>
           </div>
-          <div className="bg-white text-ink rounded-[16px] p-6 flex flex-col gap-4">
+          <div className="bg-white text-ink rounded-[24px] p-6 flex flex-col gap-4">
             <h1 className="m-0 text-[20px] font-bold">{t("login.title")}</h1>
             <p className="m-0 text-[14px] text-muted">{t("login.sub")}</p>
             {message && (

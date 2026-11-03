@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   appleWebApp: { capable: true, title: "ABOUND", statusBarStyle: "black" },
 };
 
-export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#18191B" };
+export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#1D1B19" };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -22,7 +22,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <link
           rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Space+Grotesk:wght@500;600&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap"
         />
       </head>
       <body>

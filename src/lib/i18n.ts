@@ -45,6 +45,9 @@ const zh: Dict = {
   "common.viewAll": "查看全部",
 
   "dash.hello": "你好，{name}",
+  "dash.todayWork": "今日工作",
+  "dash.ofTasks": "项任务",
+  "dash.allOpen": "所有未完成的任务",
   "dash.adminView": "管理员视图",
   "dash.staffView": "员工视图",
   "dash.mine": "我的工作",
@@ -474,6 +477,9 @@ const en: Dict = {
   "common.viewAll": "View all",
 
   "dash.hello": "Hello, {name}",
+  "dash.todayWork": "Today",
+  "dash.ofTasks": "tasks",
+  "dash.allOpen": "All open tasks",
   "dash.adminView": "Admin view",
   "dash.staffView": "Staff view",
   "dash.mine": "My work",

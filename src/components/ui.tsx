@@ -19,20 +19,20 @@ export function Button({
   ...rest
 }: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: BtnVariant; size?: "sm" | "md" }) {
   const base =
-    "inline-flex items-center justify-center gap-2 rounded-[10px] font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer whitespace-nowrap";
-  const sizes = { sm: "min-h-[36px] px-3 text-[13px]", md: "min-h-[44px] px-4 text-[14px]" };
+    "inline-flex items-center justify-center gap-2 rounded-full font-semibold transition-[filter,background-color] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer whitespace-nowrap";
+  const sizes = { sm: "min-h-[36px] px-3.5 text-[12.5px]", md: "min-h-[44px] px-5 text-[14px]" };
   const variants: Record<BtnVariant, string> = {
-    primary: "bg-accent text-white hover:bg-accent-dark",
-    dark: "bg-ink text-white hover:bg-black",
-    secondary: "bg-white text-ink border border-[#DCDCD6] hover:bg-well",
+    primary: "bg-brand text-white shadow-[0_6px_14px_rgba(236,28,36,.22)] hover:brightness-95",
+    dark: "bg-[#2A2724] text-white hover:bg-black",
+    secondary: "bg-white text-ink border border-line hover:bg-well",
     ghost: "bg-transparent text-ink-2 hover:bg-black/5",
-    danger: "bg-white text-danger border border-[#DCDCD6] hover:bg-danger-soft",
+    danger: "bg-white text-danger border border-line hover:bg-danger-soft",
   };
   return <button type="button" className={cx(base, sizes[size], variants[variant], className)} {...rest} />;
 }
 
 export function Card({ children, className }: { children: ReactNode; className?: string }) {
-  return <div className={cx("bg-card border border-line rounded-[14px] p-5", className)}>{children}</div>;
+  return <div className={cx("bg-card rounded-[24px] p-5", className)}>{children}</div>;
 }
 
 export function ServiceTag({ type, variant, label }: { type: ServiceType; variant?: string; label?: string }) {
@@ -40,7 +40,7 @@ export function ServiceTag({ type, variant, label }: { type: ServiceType; varian
   const [bg, fg] = SERVICE_COLORS[type];
   return (
     <span
-      className="inline-flex items-center h-[22px] px-2 rounded-md text-[12px] font-medium whitespace-nowrap"
+      className="inline-flex items-center h-[24px] px-2.5 rounded-full text-[12px] font-semibold whitespace-nowrap"
       style={{ background: bg, color: fg }}
     >
       {t(`svc.${type}`)}
@@ -72,6 +72,15 @@ export const PROJECT_STATUS_COLORS: Record<string, [string, string]> = {
   cancelled: ["#EDEDEA", "#5F6166"],
 };
 
+/** 项目状态小圆点颜色 */
+export const PROJECT_STATUS_DOT: Record<string, string> = {
+  active: "#2D45C8",
+  waiting: "#C77700",
+  paused: "#8A857E",
+  done: "#2F7D4F",
+  cancelled: "#8A857E",
+};
+
 export const TASK_STATUS_COLORS: Record<string, [string, string, string]> = {
   todo: ["#EDEDEA", "#4A4C51", "#9A9CA3"],
   doing: ["#E9ECFB", "#2D45C8", "#2D45C8"],
@@ -82,15 +91,27 @@ export const TASK_STATUS_COLORS: Record<string, [string, string, string]> = {
 
 export const PRIORITY_COLORS: Record<string, string> = { high: "#A82828", medium: "#8A5A00", low: "#5F6166" };
 
-export function ProgressBar({ pct, color = "#18191B" }: { pct: number; color?: string }) {
+/** 进度条：默认用 Logo 红渐变；传 color 则用单色 */
+export function ProgressBar({ pct, color }: { pct: number; color?: string }) {
+  const w = Math.max(0, Math.min(100, pct));
   return (
-    <div className="h-1.5 rounded-full bg-[#EEEEEA] overflow-hidden" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
-      <div className="h-full rounded-full" style={{ width: `${Math.max(0, Math.min(100, pct))}%`, background: color }} />
+    <div className="h-1.5 rounded-full bg-[#EFECE8] overflow-hidden" role="progressbar" aria-valuenow={Math.round(w)} aria-valuemin={0} aria-valuemax={100}>
+      <div className={cx("h-full rounded-full", !color && "bg-brand")} style={{ width: `${w > 0 ? Math.max(w, 2) : 0}%`, background: color }} />
     </div>
   );
 }
 
-const AVATAR_COLORS = ["#2D45C8", "#8A4310", "#1F6B5C", "#5B3A9E", "#8E2A63", "#3F4146"];
+/** 状态标签：白底细框 + 彩色小圆点 */
+export function StatusDot({ children, dot }: { children: ReactNode; dot: string }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 h-6 px-2.5 rounded-full border border-[#ECE9E4] bg-white text-[11.5px] font-medium whitespace-nowrap text-ink">
+      <span aria-hidden="true" className="w-1.5 h-1.5 rounded-full" style={{ background: dot }} />
+      {children}
+    </span>
+  );
+}
+
+const AVATAR_COLORS = ["#8A4310", "#2D45C8", "#1F6B5C", "#5B3A9E", "#8E2A63", "#3F4146"];
 
 export function Avatar({ name, email, size = 28 }: { name: string; email: string; size?: number }) {
   let h = 0;
@@ -165,7 +186,7 @@ export function Modal({
         onClose();
       }}
       className={cx(
-        "m-auto p-0 rounded-[16px] border border-line bg-white text-ink backdrop:bg-black/40 w-[calc(100%-32px)] max-h-[calc(100vh-48px)]",
+        "m-auto p-0 rounded-[24px] border-0 shadow-[0_24px_60px_rgba(0,0,0,.18)] bg-white text-ink backdrop:bg-black/40 w-[calc(100%-32px)] max-h-[calc(100vh-48px)]",
         wide ? "max-w-[860px]" : "max-w-[560px]"
       )}
     >
@@ -301,7 +322,7 @@ export function Segmented<T extends string>({
   label: string;
 }) {
   return (
-    <div role="group" aria-label={label} className="flex gap-1 p-[3px] rounded-[10px] bg-[#E9E9E4]">
+    <div role="group" aria-label={label} className="flex gap-1 p-[3px] rounded-full bg-[#E9E6E1]">
       {options.map((o) => (
         <button
           key={o.value}
@@ -309,8 +330,8 @@ export function Segmented<T extends string>({
           aria-pressed={o.value === value}
           onClick={() => onChange(o.value)}
           className={cx(
-            "min-h-[36px] px-3.5 rounded-[7px] text-[13px] cursor-pointer",
-            o.value === value ? "bg-white text-ink font-medium shadow-[0_1px_2px_rgba(0,0,0,.08)]" : "text-[#4A4C51]"
+            "min-h-[34px] px-4 rounded-full text-[13px] cursor-pointer",
+            o.value === value ? "bg-white text-ink font-semibold shadow-[0_1px_3px_rgba(0,0,0,.1)]" : "text-[#57524C]"
           )}
         >
           {o.label}
@@ -324,8 +345,8 @@ export function PageHeader({ title, sub, actions }: { title: string; sub?: React
   return (
     <header className="flex flex-wrap items-center justify-between gap-4">
       <div className="flex flex-col gap-1.5">
-        <h1 className="m-0 text-[26px] sm:text-[28px] font-bold tracking-tight">{title}</h1>
-        {sub && <p className="m-0 text-[14px] text-muted">{sub}</p>}
+        <h1 className="m-0 text-[26px] font-bold tracking-tight">{title}</h1>
+        {sub && <p className="m-0 text-[13px] text-muted">{sub}</p>}
       </div>
       {actions && <div className="flex flex-wrap items-center gap-2.5">{actions}</div>}
     </header>

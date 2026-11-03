@@ -1,27 +1,38 @@
 @import "tailwindcss";
 
 @theme {
-  --color-ink: #18191b;
-  --color-ink-2: #3a3c40;
-  --color-muted: #5f6166;
-  --color-faint: #6b6d72;
-  --color-paper: #f3f3f0;
+  --color-ink: #1c1a18;
+  --color-ink-2: #3a3632;
+  --color-muted: #66615a;
+  --color-faint: #6e6962;
+  --color-paper: #f3f2ef;
   --color-card: #ffffff;
-  --color-line: #e6e6e1;
-  --color-line-soft: #efefeb;
-  --color-well: #fafaf8;
-  --color-accent: #2d45c8;
-  --color-accent-dark: #1e3299;
-  --color-accent-soft: #e9ecfb;
-  --color-danger: #a82828;
-  --color-danger-soft: #fce8e8;
+  --color-line: #e8e5e0;
+  --color-line-soft: #f0eeea;
+  --color-well: #f7f6f3;
+  --color-accent: #ec1c24;
+  --color-accent-dark: #b8131b;
+  --color-accent-soft: #fdecea;
+  --color-danger: #b3261e;
+  --color-danger-soft: #fce8e6;
   --color-warn: #8a5a00;
   --color-warn-soft: #fbf1dc;
   --color-ok: #23683f;
   --color-ok-soft: #e3f2e8;
-  --color-nav: #18191b;
-  --font-sans: "Noto Sans SC", system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
-  --font-display: "Space Grotesk", "Noto Sans SC", system-ui, sans-serif;
+  --color-nav: #1d1b19;
+  --color-nav-card: #292624;
+  --color-nav-item: #3b3734;
+  --color-frame: #e7e4df;
+  --font-sans: "Inter", "Noto Sans SC", system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+  --font-display: "Inter", "Noto Sans SC", system-ui, sans-serif;
+}
+
+/* ABOUND Logo 红渐变（重点色） */
+@utility bg-brand {
+  background: linear-gradient(135deg, #f45a3c 0%, #ec1c24 55%, #b8131b 100%);
+}
+@utility shadow-brand {
+  box-shadow: 0 10px 24px rgba(236, 28, 36, 0.24);
 }
 
 @layer base {
@@ -34,10 +45,10 @@ body {
 }
 
 a {
-  color: var(--color-accent);
+  color: var(--color-ink);
 }
 a:hover {
-  color: var(--color-accent-dark);
+  color: #000;
 }
 
 :focus-visible {
@@ -55,8 +66,8 @@ textarea {
   width: 100%;
   min-height: 42px;
   padding: 8px 12px;
-  border: 1px solid #dcdcd6;
-  border-radius: 10px;
+  border: 1px solid #e3e0db;
+  border-radius: 12px;
   background: #fff;
   color: var(--color-ink);
   font-size: 14px;
@@ -65,7 +76,7 @@ textarea {
 .field:focus {
   outline: none;
   border-color: var(--color-accent);
-  box-shadow: 0 0 0 3px rgba(45, 69, 200, 0.15);
+  box-shadow: 0 0 0 3px rgba(236, 28, 36, 0.12);
 }
 textarea.field {
   min-height: 84px;

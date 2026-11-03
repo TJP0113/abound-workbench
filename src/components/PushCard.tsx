@@ -106,7 +106,7 @@ export function PushBanner() {
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-3 px-4 py-3 rounded-[12px] bg-accent-soft border border-[#C9D1F5] text-[14px]">
+    <div className="flex flex-wrap items-center gap-3 px-4 py-3 rounded-[18px] bg-accent-soft border border-[#F8C9C4] text-[14px]">
       <Icon name="bell" />
       <span className="flex-1 min-w-[200px]">{state === "ios-install" ? t("push.bannerIos") : t("push.banner")}</span>
       {state === "off" && (

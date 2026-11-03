@@ -24,7 +24,7 @@ function TaskCard({ task, onOpen, onDragStart }: { task: Task; onOpen: () => voi
     <article
       draggable
       onDragStart={onDragStart}
-      className="bg-white border border-[#E2E2DD] rounded-[10px] p-3.5 flex flex-col gap-2.5 cursor-grab active:cursor-grabbing"
+      className="bg-white rounded-[16px] p-3.5 flex flex-col gap-2.5 cursor-grab active:cursor-grabbing"
     >
       <div className="flex justify-between items-center gap-2">
         <TaskKindTag task={task} />
@@ -179,7 +179,7 @@ function TasksInner() {
       />
 
       {isAdmin && (
-        <section aria-labelledby="load" className="bg-card border border-line rounded-[14px] px-5 py-4 flex flex-wrap items-center gap-x-7 gap-y-3">
+        <section aria-labelledby="load" className="bg-card rounded-[24px] px-5 py-4 flex flex-wrap items-center gap-x-7 gap-y-3">
           <h2 id="load" className="m-0 text-[14px] font-bold">
             {t("task.workload")}
           </h2>
@@ -219,7 +219,7 @@ function TasksInner() {
                 key={col}
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={() => drop(col)}
-                className="bg-[#EBEBE6] rounded-[14px] p-3 flex flex-col gap-2.5 min-h-[240px]"
+                className="bg-[#E9E6E1] rounded-[20px] p-3 flex flex-col gap-2.5 min-h-[240px]"
               >
                 <div className="flex items-center justify-between px-1.5 py-1">
                   <h2 className="m-0 text-[14px] font-bold flex items-center gap-2">
