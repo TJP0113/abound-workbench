@@ -6,6 +6,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { useData } from "@/components/DataProvider";
 import { TopBar } from "@/components/AppShell";
 import { ProjectForm } from "@/components/ProjectForm";
+import { SwipeRow } from "@/components/SwipeRow";
 import {
   Button,
   DueLabel,
@@ -28,78 +29,120 @@ import type { Project, ProjectStatus, ServiceType, UniformVariant } from "@/lib/
 type View = "list" | "board" | "timeline";
 const STATUS_FILTERS: (ProjectStatus | "all" | "open")[] = ["open", "active", "waiting", "paused", "done", "cancelled", "all"];
 
+const LIST_COLS = "minmax(180px,2fr) minmax(130px,1.3fr) minmax(120px,1.2fr) 160px minmax(100px,1fr) minmax(90px,.9fr) 110px";
+
 function ListView({ projects }: { projects: Project[] }) {
-  const { t, stage } = useAuth();
+  const { t, stage, isAdmin } = useAuth();
   const { tasks, memberName } = useData();
+  const { deleteProject } = useActions();
+  const [openId, setOpenId] = useState<string | null>(null);
   if (!projects.length) return <EmptyState>{t("proj.empty")}</EmptyState>;
+
+  const remove = async (p: Project) => {
+    if (!confirm(`${p.name}\n\n${t("proj.deleteConfirm")}`)) return setOpenId(null);
+    setOpenId(null);
+    await deleteProject(p.id);
+  };
+
   return (
-    <div className="bg-card border border-line rounded-[14px] overflow-x-auto">
-      <table className="w-full min-w-[980px] border-collapse text-[14px]">
-        <thead>
-          <tr className="text-left text-muted text-[12px]">
-            {["proj.name", "proj.services", "proj.stage", "proj.progress", "proj.owner", "proj.due", "proj.status"].map((k, i) => (
-              <th key={k} scope="col" className={cx("py-3.5 font-medium border-b border-[#EAEAE5]", i === 0 ? "px-5" : "px-3", i === 3 && "w-[160px]")}>
-                {t(k)}
-              </th>
+    <div className="bg-card border border-line rounded-[14px] overflow-hidden text-[14px]" role="table">
+      <div role="row" className="hidden xl:grid text-left text-muted text-[12px] border-b border-[#EAEAE5]" style={{ gridTemplateColumns: LIST_COLS }}>
+        {["proj.name", "proj.services", "proj.stage", "proj.progress", "proj.owner", "proj.due", "proj.status"].map((k, i) => (
+          <div key={k} role="columnheader" className={cx("py-3.5 font-medium", i === 0 ? "px-5" : "px-3")}>
+            {t(k)}
+          </div>
+        ))}
+      </div>
+      {projects.map((p) => {
+        const cur = currentStage(p);
+        const pct = projectProgress(p, tasks);
+        const social = socialCycleProgress(p, tasks);
+        const [sbg, sfg] = PROJECT_STATUS_COLORS[p.status];
+        const color = SERVICE_COLORS[p.services[0]?.type ?? "brand"][1];
+        const stageText = cur?.stage ? stage(cur.stage) : cur?.svc.stages.length === 0 ? "—" : t("proj.allDone");
+        const stageSub = social
+          ? t("social.cycleProgress", { a: social.done, b: social.total })
+          : cur && cur.svc.stages.length
+            ? t("proj.stageOf", { a: Math.min(cur.index + 1, cur.svc.stages.length), b: cur.svc.stages.length })
+            : "";
+        const services = (
+          <div className="flex flex-wrap gap-1">
+            {p.services.map((s, i) => (
+              <ServiceTag key={i} type={s.type} variant={s.variant} label={s.label} />
             ))}
-          </tr>
-        </thead>
-        <tbody>
-          {projects.map((p) => {
-            const cur = currentStage(p);
-            const pct = projectProgress(p, tasks);
-            const social = socialCycleProgress(p, tasks);
-            const [sbg, sfg] = PROJECT_STATUS_COLORS[p.status];
-            const color = SERVICE_COLORS[p.services[0]?.type ?? "brand"][1];
-            return (
-              <tr key={p.id} className="hover:bg-well">
-                <td className="px-5 py-3.5 border-b border-[#F0F0EC]">
-                  <Link href={`/projects/${p.id}`} className="text-ink no-underline font-medium hover:underline">
+          </div>
+        );
+        const progress = (
+          <div className="flex items-center gap-2.5">
+            <div className="flex-1">
+              <ProgressBar pct={pct} color={color} />
+            </div>
+            <span className="w-9 text-right text-[13px] font-semibold" style={{ fontFamily: "var(--font-display)" }}>
+              {pct}%
+            </span>
+          </div>
+        );
+        const status = (
+          <Pill bg={sbg} fg={sfg} round>
+            {t(`status.${p.status}`)}
+          </Pill>
+        );
+        const due = <DueLabel date={p.dueDate} done={p.status === "done" || p.status === "cancelled"} />;
+        return (
+          <SwipeRow
+            key={p.id}
+            enabled={isAdmin}
+            open={openId === p.id}
+            onOpenChange={(o) => setOpenId(o ? p.id : null)}
+            onDelete={() => remove(p)}
+            deleteLabel={t("common.delete")}
+            className="border-b border-[#F0F0EC] last:border-b-0"
+          >
+            {/* 宽屏：表格行 */}
+            <div role="row" className="hidden xl:grid items-center hover:bg-well select-none" style={{ gridTemplateColumns: LIST_COLS }}>
+              <div role="cell" className="px-5 py-3.5 min-w-0">
+                <Link href={`/projects/${p.id}`} className="text-ink no-underline font-medium hover:underline" draggable={false}>
+                  {p.name}
+                </Link>
+                {p.client && <div className="text-[12px] text-muted mt-1">{p.client}</div>}
+              </div>
+              <div role="cell" className="px-3 py-3.5">{services}</div>
+              <div role="cell" className="px-3 py-3.5 text-ink-2">
+                {stageText}
+                <div className="text-[12px] text-faint mt-1">{stageSub}</div>
+              </div>
+              <div role="cell" className="px-3 py-3.5">{progress}</div>
+              <div role="cell" className="px-3 py-3.5 text-ink-2 truncate">{memberName(p.ownerEmail)}</div>
+              <div role="cell" className="px-3 py-3.5">{due}</div>
+              <div role="cell" className="px-3 py-3.5">{status}</div>
+            </div>
+            {/* 窄屏 / 手机：卡片 */}
+            <div role="row" className="xl:hidden flex flex-col gap-2 px-4 py-3.5 select-none">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <Link href={`/projects/${p.id}`} className="text-ink no-underline font-medium" draggable={false}>
                     {p.name}
                   </Link>
-                  {p.client && <div className="text-[12px] text-muted mt-1">{p.client}</div>}
-                </td>
-                <td className="px-3 py-3.5 border-b border-[#F0F0EC]">
-                  <div className="flex flex-wrap gap-1">
-                    {p.services.map((s, i) => (
-                      <ServiceTag key={i} type={s.type} variant={s.variant} label={s.label} />
-                    ))}
-                  </div>
-                </td>
-                <td className="px-3 py-3.5 border-b border-[#F0F0EC] text-ink-2">
-                  {cur?.stage ? stage(cur.stage) : cur?.svc.stages.length === 0 ? "—" : t("proj.allDone")}
-                  <div className="text-[12px] text-faint mt-1">
-                    {social
-                      ? t("social.cycleProgress", { a: social.done, b: social.total })
-                      : cur && cur.svc.stages.length
-                        ? t("proj.stageOf", { a: Math.min(cur.index + 1, cur.svc.stages.length), b: cur.svc.stages.length })
-                        : ""}
-                  </div>
-                </td>
-                <td className="px-3 py-3.5 border-b border-[#F0F0EC]">
-                  <div className="flex items-center gap-2.5">
-                    <div className="flex-1">
-                      <ProgressBar pct={pct} color={color} />
-                    </div>
-                    <span className="w-9 text-right text-[13px] font-semibold" style={{ fontFamily: "var(--font-display)" }}>
-                      {pct}%
-                    </span>
-                  </div>
-                </td>
-                <td className="px-3 py-3.5 border-b border-[#F0F0EC] text-ink-2">{memberName(p.ownerEmail)}</td>
-                <td className="px-3 py-3.5 border-b border-[#F0F0EC]">
-                  <DueLabel date={p.dueDate} done={p.status === "done" || p.status === "cancelled"} />
-                </td>
-                <td className="px-3 py-3.5 border-b border-[#F0F0EC]">
-                  <Pill bg={sbg} fg={sfg} round>
-                    {t(`status.${p.status}`)}
-                  </Pill>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+                  {p.client && <div className="text-[12px] text-muted mt-0.5">{p.client}</div>}
+                </div>
+                {status}
+              </div>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-muted">
+                {services}
+                <span>
+                  {stageText}
+                  {stageSub && ` · ${stageSub}`}
+                </span>
+              </div>
+              {progress}
+              <div className="flex justify-between text-[12px] text-ink-2">
+                <span>{memberName(p.ownerEmail)}</span>
+                {due}
+              </div>
+            </div>
+          </SwipeRow>
+        );
+      })}
     </div>
   );
 }
@@ -373,7 +416,9 @@ export default function ProjectsPage() {
       {view === "list" && <ListView projects={filtered} />}
       {view === "board" && <BoardView projects={filtered} />}
       {view === "timeline" && <TimelineView projects={filtered} />}
-      {view === "list" && filtered.length > 0 && <p className="m-0 text-[12px] text-faint">{t("proj.clickName")}</p>}
+      {view === "list" && filtered.length > 0 && <p className="m-0 text-[12px] text-faint">{t("proj.clickName")}
+          {isAdmin && t("proj.swipeHint")}
+        </p>}
 
       {creating && <ProjectForm open onClose={() => setCreating(false)} />}
     </>
