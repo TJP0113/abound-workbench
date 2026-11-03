@@ -9,8 +9,9 @@ import { useAuth } from "./AuthProvider";
 interface Data {
   loaded: boolean;
   members: Member[];
-  projects: Project[];
-  tasks: Task[];
+  projects: Project[]; // 不含回收站
+  trash: Project[]; // 回收站里的项目
+  tasks: Task[]; // 不含回收站项目的任务
   events: CalEvent[];
   notifications: AppNotification[];
   memberName: (email: string) => string;
@@ -54,7 +55,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     ready ? collection(db(), "members") : null,
     [ready]
   );
-  const [projects, pLoaded] = useCollection<Project>(
+  const [projectsAll, pLoaded] = useCollection<Project>(
     ready
       ? isAdmin
         ? collection(db(), "projects")
@@ -62,7 +63,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       : null,
     [ready, isAdmin, email]
   );
-  const [tasks, tLoaded] = useCollection<Task>(
+  const [tasksAll, tLoaded] = useCollection<Task>(
     ready
       ? isAdmin
         ? collection(db(), "tasks")
@@ -79,18 +80,23 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const value = useMemo<Data>(() => {
     const members = membersRaw.map((m) => ({ ...m, email: m.id })).sort((a, b) => a.name.localeCompare(b.name));
     const byEmail = new Map(members.map((m) => [m.email, m]));
+    const projects = projectsAll.filter((p) => !p.deletedAt);
+    const trash = projectsAll.filter((p) => p.deletedAt).sort((a, b) => (b.deletedAt || 0) - (a.deletedAt || 0));
+    const trashed = new Set(trash.map((p) => p.id));
+    const tasks = tasksAll.filter((t) => !t.projectId || !trashed.has(t.projectId));
     const byId = new Map(projects.map((p) => [p.id, p]));
     return {
       loaded: mLoaded && pLoaded && tLoaded && eLoaded,
       members,
       projects,
+      trash,
       tasks,
       events,
       notifications: [...notifsRaw].sort((a, b) => b.createdAt - a.createdAt),
       memberName: (e) => byEmail.get(e)?.name || e.split("@")[0],
       projectById: (id) => byId.get(id),
     };
-  }, [membersRaw, projects, tasks, events, notifsRaw, mLoaded, pLoaded, tLoaded, eLoaded]);
+  }, [membersRaw, projectsAll, tasksAll, events, notifsRaw, mLoaded, pLoaded, tLoaded, eLoaded]);
 
   return <DataCtx.Provider value={value}>{children}</DataCtx.Provider>;
 }

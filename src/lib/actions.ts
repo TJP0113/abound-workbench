@@ -6,6 +6,7 @@ import {
   collection,
   deleteDoc,
   doc,
+  getDoc,
   getDocs,
   query,
   setDoc,
@@ -15,6 +16,7 @@ import {
 } from "firebase/firestore";
 import { db } from "./firebase";
 import { translate } from "./i18n";
+import { monthStr, todayStr } from "./dates";
 import type { AppNotification, CalEvent, Member, NotificationType, Project, Task, TaskStatus } from "./types";
 import { useAuth } from "@/components/AuthProvider";
 import { useData } from "@/components/DataProvider";
@@ -114,18 +116,108 @@ export function useActions() {
     [api, isAdmin, requestSync]
   );
 
+  /** 放入回收站（30 天后自动永久删除） */
   const deleteProject = useCallback(
     async (id: string) => {
-      const batch = writeBatch(db());
-      for (const c of ["tasks", "orderForms", "orderImages"]) {
-        const snap = await getDocs(query(collection(db(), c), where("projectId", "==", id)));
-        snap.forEach((d) => batch.delete(d.ref));
-      }
-      batch.delete(doc(db(), "projects", id));
-      await batch.commit();
+      await updateDoc(doc(db(), "projects", id), { deletedAt: Date.now(), deletedBy: me });
+      requestSync();
+    },
+    [me, requestSync]
+  );
+
+  const restoreProject = useCallback(
+    async (id: string) => {
+      await updateDoc(doc(db(), "projects", id), { deletedAt: null, updatedAt: Date.now() });
       requestSync();
     },
     [requestSync]
+  );
+
+  /** 永久删除：连同任务、Order Form、图片 */
+  const purgeProject = useCallback(async (id: string) => {
+    const refs = [doc(db(), "projects", id)];
+    for (const c of ["tasks", "orderForms", "orderImages"]) {
+      const snap = await getDocs(query(collection(db(), c), where("projectId", "==", id)));
+      snap.forEach((d) => refs.push(d.ref));
+    }
+    for (let i = 0; i < refs.length; i += 400) {
+      const batch = writeBatch(db());
+      refs.slice(i, i + 400).forEach((r) => batch.delete(r));
+      await batch.commit();
+    }
+  }, []);
+
+  /** 复制项目：阶段归零、日期清空；可选连同 Order Form（含图片）一起复制。任务不复制。 */
+  const duplicateProject = useCallback(
+    async (src: Project, name: string, withForms: boolean): Promise<string> => {
+      const month = monthStr();
+      const today = todayStr();
+      const services = src.services.map((s) => {
+        const svc = { ...s, current: 0 };
+        if (s.social)
+          svc.social = {
+            ...s.social,
+            cycles: [],
+            startMonth: s.social.startMonth > month ? s.social.startMonth : month,
+            endMonth: s.social.endMonth && s.social.endMonth >= month ? s.social.endMonth : null,
+          };
+        return svc;
+      });
+      const outsourcing = src.outsourcing ? { ...src.outsourcing, orderDate: "", vendorEta: "", printerEta: "" } : undefined;
+      const data = clean({
+        name,
+        client: src.client,
+        startDate: today,
+        dueDate: "",
+        ownerEmail: src.ownerEmail,
+        memberEmails: src.memberEmails,
+        status: "active",
+        services,
+        notes: src.notes,
+        outsourcing,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      });
+      const ref = await addDoc(collection(db(), "projects"), data);
+      if (withForms) {
+        const forms = await getDocs(query(collection(db(), "orderForms"), where("projectId", "==", src.id)));
+        const copyImg = async (id?: string) => {
+          if (!id) return id;
+          const snap = await getDoc(doc(db(), "orderImages", id));
+          const img = snap.data()?.data as string | undefined;
+          if (!img) return undefined;
+          const r = await addDoc(collection(db(), "orderImages"), { data: img, projectId: ref.id, memberEmails: src.memberEmails, createdAt: Date.now() });
+          return r.id;
+        };
+        for (const d of forms.docs) {
+          const f = d.data();
+          const images = [];
+          for (const im of (f.images || []) as { id: string; caption?: string }[]) {
+            const nid = await copyImg(im.id);
+            if (nid) images.push({ ...im, id: nid });
+          }
+          await addDoc(
+            collection(db(), "orderForms"),
+            clean({
+              ...f,
+              projectId: ref.id,
+              memberEmails: src.memberEmails,
+              orderDate: today,
+              deliveryDate: "",
+              frontImage: await copyImg(f.frontImage),
+              backImage: await copyImg(f.backImage),
+              images: f.images ? images : undefined,
+              createdAt: Date.now(),
+              updatedAt: Date.now(),
+            })
+          );
+        }
+      }
+      if (services.some((s) => s.type === "social")) await api("/api/maintenance").catch(() => {});
+      requestSync();
+      return ref.id;
+    },
+    [api, requestSync]
   );
 
   // ---------- 任务 ----------
@@ -214,6 +306,9 @@ export function useActions() {
     createProject,
     updateProject,
     deleteProject,
+    restoreProject,
+    purgeProject,
+    duplicateProject,
     createTask,
     updateTask,
     setTaskStatus,

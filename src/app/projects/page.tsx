@@ -7,6 +7,7 @@ import { useData } from "@/components/DataProvider";
 import { TopBar } from "@/components/AppShell";
 import { ProjectForm } from "@/components/ProjectForm";
 import { SwipeRow } from "@/components/SwipeRow";
+import { TrashModal } from "@/components/TrashModal";
 import {
   Button,
   DueLabel,
@@ -317,7 +318,8 @@ function TimelineView({ projects }: { projects: Project[] }) {
 
 export default function ProjectsPage() {
   const { t, isAdmin } = useAuth();
-  const { projects } = useData();
+  const { projects, trash } = useData();
+  const [trashOpen, setTrashOpen] = useState(false);
   const [view, setView] = useState<View>("list");
   const [svc, setSvc] = useState<ServiceType | "all">("all");
   const [status, setStatus] = useState<(typeof STATUS_FILTERS)[number]>("open");
@@ -410,6 +412,13 @@ export default function ProjectsPage() {
               { value: "timeline", label: t("proj.timeline") },
             ]}
           />
+          {isAdmin && (
+            <Button variant="ghost" onClick={() => setTrashOpen(true)}>
+              <Icon name="trash" size={16} />
+              {t("trash.title")}
+              {trash.length > 0 && ` ${trash.length}`}
+            </Button>
+          )}
         </div>
       </div>
 
@@ -421,6 +430,7 @@ export default function ProjectsPage() {
         </p>}
 
       {creating && <ProjectForm open onClose={() => setCreating(false)} />}
+      {isAdmin && <TrashModal open={trashOpen} onClose={() => setTrashOpen(false)} />}
     </>
   );
 }

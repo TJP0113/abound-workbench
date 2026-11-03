@@ -10,6 +10,7 @@ export interface Member {
   skills?: string;
   phone?: string;
   lang?: Lang;
+  lastBackupAt?: number; // 上次下载备份的时间（管理员）
 }
 
 export type ServiceType = "brand" | "uniform" | "social" | "merch" | "graphic" | "photo" | "other";
@@ -76,6 +77,8 @@ export interface Project {
   services: ProjectService[];
   notes?: string;
   outsourcing?: Outsourcing;
+  deletedAt?: number | null; // 放入回收站的时间（30 天后自动永久删除）
+  deletedBy?: string;
   createdAt?: number;
   updatedAt?: number;
 }
@@ -134,6 +137,7 @@ export interface CalEvent {
 }
 
 export type NotificationType =
+  | "backup"
   | "assigned"
   | "submitted"
   | "rejected"

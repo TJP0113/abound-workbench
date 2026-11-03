@@ -130,9 +130,10 @@ async function buildDesired(): Promise<Desired[]> {
   const link = (path: string) => `${appUrl()}${path}`;
   const out: Desired[] = [];
 
+  const trashed = new Set(projects.docs.filter((d) => (d.data() as Project).deletedAt).map((d) => d.id));
   for (const d of projects.docs) {
     const p = d.data() as Project;
-    if (p.status === "cancelled") continue;
+    if (p.status === "cancelled" || p.deletedAt) continue;
     const label = p.client ? `${p.name}（${p.client}）` : p.name;
     const desc = `负责人：${nm([p.ownerEmail])}\n${link(`/projects/${d.id}`)}`;
     if (p.dueDate && p.status !== "done") out.push(bodyFor(`p_${d.id}`, `交货 · ${label}`, "delivery", allDay(p.dueDate), desc));
@@ -145,7 +146,7 @@ async function buildDesired(): Promise<Desired[]> {
 
   for (const d of tasks.docs) {
     const t = d.data() as Task;
-    if (t.status === "done" || !t.due) continue;
+    if (t.status === "done" || !t.due || (t.projectId && trashed.has(t.projectId))) continue;
     out.push(
       bodyFor(
         `t_${d.id}`,

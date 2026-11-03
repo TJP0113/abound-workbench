@@ -1,5 +1,5 @@
 import { jsonError } from "@/lib/server/admin";
-import { runReminders, runSocialCycles } from "@/lib/server/maintenance";
+import { runReminders, runSocialCycles, purgeTrash } from "@/lib/server/maintenance";
 import { spawnRoutines } from "@/lib/server/routine";
 import { syncCalendar } from "@/lib/server/gcal";
 
@@ -16,8 +16,9 @@ export async function GET(req: Request) {
     const social = await runSocialCycles();
     const routines = await spawnRoutines();
     const reminders = await runReminders();
+    const purged = await purgeTrash().catch(() => -1);
     const gcal = await syncCalendar().catch((e) => ({ error: String(e) }));
-    return Response.json({ social, routines, reminders, gcal });
+    return Response.json({ social, routines, reminders, purged, gcal });
   } catch (e) {
     return jsonError(e);
   }

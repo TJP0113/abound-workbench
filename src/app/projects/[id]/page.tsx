@@ -7,6 +7,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { useData } from "@/components/DataProvider";
 import { TopBar } from "@/components/AppShell";
 import { ProjectForm } from "@/components/ProjectForm";
+import { DuplicateProject } from "@/components/DuplicateProject";
 import { TaskForm } from "@/components/TaskForm";
 import { OutsourcingPanel } from "@/components/OutsourcingPanel";
 import { OrderFormsPanel } from "@/components/OrderFormsPanel";
@@ -183,17 +184,20 @@ function TaskRow({ task, onOpen }: { task: Task; onOpen: () => void }) {
 export default function ProjectDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const { t, lang, isAdmin } = useAuth();
-  const { projectById, tasks, events, memberName } = useData();
-  const { deleteProject } = useActions();
+  const { projectById, tasks, events, memberName, trash } = useData();
+  const { deleteProject, restoreProject } = useActions();
+  const [duplicating, setDuplicating] = useState(false);
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [taskForm, setTaskForm] = useState<{ task?: Task } | null>(null);
   const project = projectById(id);
 
+  const trashed = trash.find((p) => p.id === id);
   if (!project)
     return (
-      <Card>
-        <p className="m-0 text-[14px] text-muted">{t("proj.notFound")}</p>
+      <Card className="flex flex-col gap-3 items-start">
+        <p className="m-0 text-[14px] text-muted">{trashed ? `${trashed.name} — ${t("trash.inTrash")}` : t("proj.notFound")}</p>
+        {trashed && isAdmin && <Button onClick={() => restoreProject(trashed.id)}>{t("trash.restore")}</Button>}
         <Link href="/projects" className="text-[14px]">
           ← {t("nav.projects")}
         </Link>
@@ -271,6 +275,7 @@ export default function ProjectDetail({ params }: { params: Promise<{ id: string
             {isAdmin && (
               <div className="flex gap-2">
                 <Button onClick={() => setEditing(true)}>{t("common.edit")}</Button>
+                <Button onClick={() => setDuplicating(true)}>{t("dup.button")}</Button>
                 <Button
                   variant="danger"
                   aria-label={t("common.delete")}
@@ -349,6 +354,7 @@ export default function ProjectDetail({ params }: { params: Promise<{ id: string
       </div>
 
       {editing && <ProjectForm open project={project} onClose={() => setEditing(false)} />}
+      {duplicating && <DuplicateProject project={project} onClose={() => setDuplicating(false)} />}
       {taskForm && <TaskForm open task={taskForm.task} projectId={project.id} onClose={() => setTaskForm(null)} />}
     </>
   );

@@ -2,12 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "./AuthProvider";
-import { Button, Card, EmptyState, Icon, Pill, Segmented } from "./ui";
+import { Button, Card, EmptyState, Icon, Modal, Pill, Segmented } from "./ui";
 import { OrderFormEditor } from "./OrderFormEditor";
 import { OrderFormSheet } from "./OrderFormSheet";
 import { newOrderForm, totalQty, type OrderForm, type OrderFormKind } from "@/lib/orderform";
 import { deleteOrderForm, loadOrderImage, saveOrderForm, uploadOrderImage, useOrderForms } from "@/lib/orderform-store";
-import { downloadSheetsPdf } from "@/lib/pdf";
+import { buildSheetsPdf, canShareFiles, downloadFiles, shareFiles } from "@/lib/pdf";
 import { formatDate, todayStr } from "@/lib/dates";
 import type { Project } from "@/lib/types";
 
@@ -20,13 +20,17 @@ export function OrderFormsPanel({ project }: { project: Project }) {
   const { t, lang } = useAuth();
   const forms = useOrderForms(project.id);
   const [editing, setEditing] = useState<{ form?: OrderForm; initial?: Omit<OrderForm, "id"> } | null>(null);
-  const [exporting, setExporting] = useState<{ list: OrderForm[]; combine: boolean } | null>(null);
+  const [exporting, setExporting] = useState<{ list: OrderForm[]; combine: boolean; share?: boolean } | null>(null);
+  const [pendingShare, setPendingShare] = useState<File[] | null>(null);
+  const [shareable, setShareable] = useState(false);
   const [selected, setSelected] = useState<string[]>([]);
   const [mode, setModeState] = useState<"combine" | "separate">("combine");
   const [busyId, setBusyId] = useState<string | null>(null);
   const sheetsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    // 这个浏览器能不能直接分享 PDF 文件（手机、Windows / Mac 的 Chrome、Safari 大多可以）
+    setShareable(canShareFiles([new File(["x"], "x.pdf", { type: "application/pdf" })]));
     try {
       const m = localStorage.getItem(MODE_KEY);
       if (m === "combine" || m === "separate") setModeState(m);
@@ -65,10 +69,23 @@ export function OrderFormsPanel({ project }: { project: Project }) {
       if (alive && els.length) {
         const items = exporting.list.map((f, i) => ({ el: els[i], name: fileName(f) }));
         const combinedName = `ORDER FORM - ${project.client || project.name}${exporting.list.length > 1 ? ` (${exporting.list.length})` : ""}`;
-        await downloadSheetsPdf(items, exporting.combine, exporting.list.length === 1 ? fileName(exporting.list[0]) : combinedName).catch((e) => {
+        const name = exporting.list.length === 1 ? fileName(exporting.list[0]) : combinedName;
+        try {
+          const files = await buildSheetsPdf(items, exporting.combine, name);
+          if (!exporting.share) await downloadFiles(files);
+          else {
+            const r = await shareFiles(files, name);
+            // 生成 PDF 花了较久，浏览器要求再按一次才能打开分享面板
+            if (r === "blocked") setPendingShare(files);
+            else if (r === "unsupported") {
+              await downloadFiles(files);
+              alert(t("share.unsupported"));
+            }
+          }
+        } catch (e) {
           console.error(e);
           alert(t("err.generic"));
-        });
+        }
       }
       if (alive) setExporting(null);
     })();
@@ -140,8 +157,14 @@ export function OrderFormsPanel({ project }: { project: Project }) {
             ]}
           />
           <Button size="sm" variant="dark" disabled={!chosen.length || !!exporting} onClick={() => setExporting({ list: chosen, combine: mode === "combine" })} className="ml-auto">
-            {exporting && exporting.list.length > 1 ? t("of.exporting") : t("of.downloadSelected", { n: chosen.length })}
+            {exporting && exporting.list.length > 1 && !exporting.share ? t("of.exporting") : t("of.downloadSelected", { n: chosen.length })}
           </Button>
+          {shareable && (
+            <Button size="sm" variant="primary" disabled={!chosen.length || !!exporting} onClick={() => setExporting({ list: chosen, combine: mode === "combine", share: true })}>
+              <Icon name="share" size={14} />
+              {exporting && exporting.list.length > 1 && exporting.share ? t("of.exporting") : t("share.selected", { n: chosen.length })}
+            </Button>
+          )}
         </div>
       )}
 
@@ -171,8 +194,14 @@ export function OrderFormsPanel({ project }: { project: Project }) {
                 {t("common.edit")}
               </Button>
               <Button size="sm" variant="dark" disabled={!!exporting} onClick={() => setExporting({ list: [f], combine: true })}>
-                {exporting?.list.length === 1 && exporting.list[0].id === f.id ? t("of.exporting") : "PDF"}
+                {exporting?.list.length === 1 && exporting.list[0].id === f.id && !exporting.share ? t("of.exporting") : "PDF"}
               </Button>
+              {shareable && (
+                <Button size="sm" variant="primary" disabled={!!exporting} onClick={() => setExporting({ list: [f], combine: true, share: true })}>
+                  <Icon name="share" size={14} />
+                  {exporting?.list.length === 1 && exporting.list[0].id === f.id && exporting.share ? t("of.exporting") : t("share.button")}
+                </Button>
+              )}
               <Button size="sm" variant="ghost" disabled={busyId === f.id} onClick={() => duplicate(f)}>
                 {t("of.duplicate")}
               </Button>
@@ -200,6 +229,44 @@ export function OrderFormsPanel({ project }: { project: Project }) {
           onClose={() => setEditing(null)}
           onExport={(f) => setExporting({ list: [f], combine: true })}
         />
+      )}
+      {pendingShare && (
+        <Modal
+          open
+          onClose={() => setPendingShare(null)}
+          title={t("share.readyTitle")}
+          footer={
+            <>
+              <Button
+                onClick={async () => {
+                  await downloadFiles(pendingShare);
+                  setPendingShare(null);
+                }}
+              >
+                <Icon name="download" size={16} />
+                {t("share.download")}
+              </Button>
+              <Button
+                variant="primary"
+                onClick={async () => {
+                  const files = pendingShare;
+                  setPendingShare(null);
+                  await shareFiles(files, files[0]?.name || "ORDER FORM").catch(() => alert(t("err.generic")));
+                }}
+              >
+                <Icon name="share" size={16} />
+                {t("share.button")}
+              </Button>
+            </>
+          }
+        >
+          <p className="m-0 text-[14px]">{t("share.readyBody", { n: pendingShare.length })}</p>
+          <ul className="m-0 pl-5 text-[13px] text-muted">
+            {pendingShare.map((f) => (
+              <li key={f.name}>{f.name}</li>
+            ))}
+          </ul>
+        </Modal>
       )}
       {exporting && (
         <div ref={sheetsRef} aria-hidden="true" style={{ position: "fixed", left: -20000, top: 0, pointerEvents: "none" }}>

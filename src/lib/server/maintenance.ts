@@ -15,7 +15,7 @@ export async function runSocialCycles(): Promise<{ cycles: number; finished: num
 
   for (const d of snap.docs) {
     const p = d.data() as Project;
-    if (p.status !== "active" && p.status !== "waiting") continue;
+    if ((p.status !== "active" && p.status !== "waiting") || p.deletedAt) continue;
     const idx = p.services.findIndex((s) => s.type === "social" && s.social);
     if (idx < 0) continue;
     const svc = p.services[idx];
@@ -99,10 +99,11 @@ export async function runReminders(): Promise<{ sent: number }> {
   ]);
   const admins = members.docs.filter((m) => m.data().role === "admin" && m.data().active).map((m) => m.id);
   let sent = 0;
+  const trashed = new Set(projects.docs.filter((d) => (d.data() as Project).deletedAt).map((d) => d.id));
 
   for (const d of tasks.docs) {
     const t = d.data() as Task;
-    if (t.status === "done") continue;
+    if (t.status === "done" || (t.projectId && trashed.has(t.projectId))) continue;
     const link = `/tasks?task=${d.id}`;
     const title = t.projectName ? `${t.title} · ${t.projectName}` : t.title;
     if (t.due === tomorrow) {
@@ -115,9 +116,20 @@ export async function runReminders(): Promise<{ sent: number }> {
   }
   for (const d of projects.docs) {
     const p = d.data() as Project;
-    if (p.status === "done" || p.status === "cancelled") continue;
+    if (p.status === "done" || p.status === "cancelled" || p.deletedAt) continue;
     if (p.dueDate === tomorrow) {
       await sendNotifs([p.ownerEmail, ...admins], "dueSoon", p.name, `/projects/${d.id}`);
+      sent++;
+    }
+  }
+
+  // 每月 1 号：提醒管理员下载备份（最近 25 天内已备份则跳过）
+  if (today.endsWith("-01")) {
+    const due = members.docs.filter(
+      (m) => m.data().role === "admin" && m.data().active && Date.now() - ((m.data().lastBackupAt as number) || 0) > 25 * 86400000
+    );
+    if (due.length) {
+      await sendNotifs(due.map((m) => m.id), "backup", "", "/settings#backup");
       sent++;
     }
   }
@@ -172,4 +184,32 @@ export async function migrateSocialStageOrder(): Promise<number> {
     }
   }
   return n;
+}
+
+/** 回收站：放入超过 30 天的项目连同任务、Order Form、图片一起永久删除 */
+export async function purgeTrash(): Promise<number> {
+  const db = adminDb();
+  const cutoff = Date.now() - 30 * 86400000;
+  const snap = await db.collection("projects").where("deletedAt", ">", 0).get();
+  let n = 0;
+  for (const d of snap.docs) {
+    if ((d.data().deletedAt as number) > cutoff) continue;
+    await purgeProjectServer(d.id);
+    n++;
+  }
+  return n;
+}
+
+export async function purgeProjectServer(id: string): Promise<void> {
+  const db = adminDb();
+  const refs = [db.collection("projects").doc(id)];
+  for (const c of ["tasks", "orderForms", "orderImages"]) {
+    const s = await db.collection(c).where("projectId", "==", id).get();
+    s.forEach((x) => refs.push(x.ref));
+  }
+  for (let i = 0; i < refs.length; i += 400) {
+    const batch = db.batch();
+    refs.slice(i, i + 400).forEach((r) => batch.delete(r));
+    await batch.commit();
+  }
 }

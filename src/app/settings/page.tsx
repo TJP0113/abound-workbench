@@ -6,6 +6,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { LangToggle, TopBar } from "@/components/AppShell";
 import { Avatar, Button, Card, Icon, PageHeader } from "@/components/ui";
 import { PushCard } from "@/components/PushCard";
+import { BackupCard } from "@/components/BackupCard";
 import { useGcalStatus } from "@/lib/useGcalStatus";
 import { formatDateTime } from "@/lib/dates";
 
@@ -119,6 +120,8 @@ function SettingsInner() {
           {result && <p className="m-0 text-[13px] text-ink-2">{result}</p>}
         </Card>
       )}
+
+      {isAdmin && <BackupCard />}
     </>
   );
 }
