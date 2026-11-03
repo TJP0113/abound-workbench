@@ -21,7 +21,7 @@ export const EVENT_COLORS: Record<EventType, { bg: string; fg: string; solid: st
 };
 
 const STAGES: Record<string, string[]> = {
-  brand: ["brief", "research", "proposal", "revise", "final", "deliverBrand"],
+  brand: ["brief", "research", "proposal", "revise", "presentConfirm", "deliverBrand"],
   "uniform:readymade": ["brief", "selectDesign", "confirmSpec", "orderVendor", "outsourcePrint", "pack", "ship", "deliver"],
   "uniform:custom": [
     "brief",

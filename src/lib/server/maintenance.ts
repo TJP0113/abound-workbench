@@ -137,12 +137,20 @@ export async function runReminders(): Promise<{ sent: number }> {
 export async function migrateSocialStageOrder(): Promise<number> {
   const db = adminDb();
   const OLD = ["stage.brief", "stage.contentPlan", "stage.contentMake", "stage.clientConfirm", "stage.publish", "stage.monthlyReport"].join();
+  const BRAND_OLD = ["stage.brief", "stage.research", "stage.proposal", "stage.revise", "stage.final", "stage.deliverBrand"].join();
   const snap = await db.collection("projects").get();
   let n = 0;
   for (const d of snap.docs) {
     const p = d.data() as Project;
     let changed = false;
     const services = p.services.map((s) => {
+      // 品牌设计：第 5 步「定稿」改为「与顾客展示 / 等待确认」
+      if (s.type === "brand" && s.stages.join() === BRAND_OLD) {
+        changed = true;
+        const stages = [...s.stages];
+        stages[4] = "stage.presentConfirm";
+        return { ...s, stages };
+      }
       if (s.type !== "social" || s.stages.join() !== OLD) return s;
       changed = true;
       const stages = [...s.stages];
