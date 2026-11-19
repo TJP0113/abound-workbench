@@ -343,12 +343,12 @@ export function Segmented<T extends string>({
 
 export function PageHeader({ title, sub, actions }: { title: string; sub?: ReactNode; actions?: ReactNode }) {
   return (
-    <header className="flex flex-wrap items-center justify-between gap-4">
-      <div className="flex flex-col gap-1.5">
-        <h1 className="m-0 text-[26px] font-bold tracking-tight">{title}</h1>
+    <header className="flex flex-wrap items-center justify-between gap-3 md:gap-4">
+      <div className="flex flex-col gap-1 md:gap-1.5 min-w-0">
+        <h1 className="m-0 text-[22px] md:text-[26px] font-bold tracking-tight">{title}</h1>
         {sub && <p className="m-0 text-[13px] text-muted">{sub}</p>}
       </div>
-      {actions && <div className="flex flex-wrap items-center gap-2.5">{actions}</div>}
+      {actions && <div className="flex flex-wrap items-center gap-2 md:gap-2.5">{actions}</div>}
     </header>
   );
 }

@@ -359,7 +359,7 @@ export default function ProjectsPage() {
       />
 
       <div className="flex flex-wrap items-center justify-between gap-3.5">
-        <div role="group" aria-label={t("proj.services")} className="flex flex-wrap gap-2">
+        <div role="group" aria-label={t("proj.services")} className="flex md:flex-wrap gap-2 max-md:overflow-x-auto max-md:-mx-4 max-md:px-4 max-md:pb-1 [scrollbar-width:none] [&>*]:flex-none">
           <button
             type="button"
             aria-pressed={svc === "all"}
@@ -388,7 +388,7 @@ export default function ProjectsPage() {
           ))}
         </div>
         <div className="flex flex-wrap items-center gap-2.5">
-          <input className="field !w-[200px] !rounded-full !px-4" type="search" placeholder={t("common.search")} aria-label={t("common.search")} value={q} onChange={(e) => setQ(e.target.value)} />
+          <input className="field !w-full md:!w-[200px] !rounded-full !px-4" type="search" placeholder={t("common.search")} aria-label={t("common.search")} value={q} onChange={(e) => setQ(e.target.value)} />
           <label className="flex items-center gap-2 text-[13px] text-muted">
             {t("proj.status")}
             <select className="field !w-auto !rounded-full !px-4" value={status} onChange={(e) => setStatus(e.target.value as typeof status)}>

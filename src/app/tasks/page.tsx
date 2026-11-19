@@ -70,6 +70,7 @@ function TasksInner() {
   const router = useRouter();
   const [who, setWho] = useState<string>(isAdmin ? "all" : "mine");
   const [form, setForm] = useState<{ task?: Task; routine?: boolean } | null>(null);
+  const [mobileCol, setMobileCol] = useState<Task["status"]>("todo");
   const [kind, setKind] = useState<"all" | "project" | "routine">("all");
   const [dragId, setDragId] = useState<string | null>(null);
   const [showAllDone, setShowAllDone] = useState(false);
@@ -140,17 +141,17 @@ function TasksInner() {
         sub={t("task.hint")}
         actions={
           <>
-            <label className="flex items-center gap-2 text-[13px] text-muted">
-              {t("task.typeFilter")}
-              <select className="field !w-auto" value={kind} onChange={(e) => setKind(e.target.value as typeof kind)}>
+            <label className="flex items-center gap-2 text-[13px] text-muted max-md:w-[calc(50%-4px)]">
+              <span className="max-md:sr-only">{t("task.typeFilter")}</span>
+              <select className="field md:!w-auto !rounded-full" value={kind} onChange={(e) => setKind(e.target.value as typeof kind)}>
                 <option value="all">{t("common.all")}</option>
                 <option value="project">{t("task.kind.project")}</option>
                 <option value="routine">{t("task.kind.routine")}</option>
               </select>
             </label>
-            <label className="flex items-center gap-2 text-[13px] text-muted">
-              {t("task.assigneeFilter")}
-              <select className="field !w-auto" value={who} onChange={(e) => setWho(e.target.value)}>
+            <label className="flex items-center gap-2 text-[13px] text-muted max-md:w-[calc(50%-4px)]">
+              <span className="max-md:sr-only">{t("task.assigneeFilter")}</span>
+              <select className="field md:!w-auto !rounded-full" value={who} onChange={(e) => setWho(e.target.value)}>
                 <option value="all">{t("common.all")}</option>
                 <option value="mine">{t("common.mine")}</option>
                 {isAdmin &&
@@ -180,16 +181,16 @@ function TasksInner() {
 
       {isAdmin && (
         <section aria-labelledby="load" className="bg-card rounded-[24px] px-5 py-4 flex flex-wrap items-center gap-x-7 gap-y-3">
-          <h2 id="load" className="m-0 text-[14px] font-bold">
+          <h2 id="load" className="m-0 text-[14px] font-bold max-md:w-full">
             {t("task.workload")}
           </h2>
           {active.map((m) => {
             const n = load[m.email] || 0;
             const heavy = n >= 7;
             return (
-              <div key={m.email} className="flex items-center gap-2.5">
+              <div key={m.email} className="flex items-center gap-2.5 max-md:w-full">
                 <Avatar name={m.name} email={m.email} />
-                <div className="flex flex-col gap-1 w-[120px]">
+                <div className="flex flex-col gap-1 w-[120px] max-md:flex-1">
                   <div className="flex justify-between text-[12px]">
                     <span className="truncate">{m.name}</span>
                     <span className="font-semibold" style={{ fontFamily: "var(--font-display)", color: heavy ? "#8A5A00" : undefined }}>
@@ -205,8 +206,33 @@ function TasksInner() {
         </section>
       )}
 
-      <div className="overflow-x-auto pb-2">
-        <div className="grid gap-3 min-w-[1080px]" style={{ gridTemplateColumns: "repeat(5, minmax(210px, 1fr))" }}>
+      {/* 手机：用标签切换状态，一次只看一栏 */}
+      <div role="tablist" aria-label={t("proj.status")} className="md:hidden flex gap-2 overflow-x-auto -mx-4 px-4 pb-1 [scrollbar-width:none]">
+        {COLUMNS.map((col) => {
+          const n = filtered.filter((x) => x.status === col).length;
+          const on = mobileCol === col;
+          return (
+            <button
+              key={col}
+              type="button"
+              role="tab"
+              aria-selected={on}
+              onClick={() => setMobileCol(col)}
+              className={cx(
+                "flex-none h-9 pl-3 pr-2 rounded-full text-[13px] font-medium flex items-center gap-1.5 border cursor-pointer",
+                on ? "bg-brand text-white border-transparent" : "bg-white text-ink-2 border-line"
+              )}
+            >
+              <span aria-hidden="true" className={cx("w-2 h-2 rounded-full", on && "ring-2 ring-white")} style={{ background: TASK_STATUS_COLORS[col][2] }} />
+              {t(col === "done" ? "status.taskDone" : `status.${col}`)}
+              <span className={cx("min-w-[22px] h-[22px] px-1 rounded-full text-[11px] font-semibold flex items-center justify-center", on ? "bg-white/20" : "bg-paper")}>{n}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="md:overflow-x-auto pb-2">
+        <div className="flex flex-col md:grid gap-3 md:min-w-[1080px] md:[grid-template-columns:repeat(5,minmax(210px,1fr))]">
           {COLUMNS.map((col) => {
             let list = filtered.filter((x) => x.status === col).sort((a, b) => a.due.localeCompare(b.due));
             const total = list.length;
@@ -219,7 +245,7 @@ function TasksInner() {
                 key={col}
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={() => drop(col)}
-                className="bg-[#E9E6E1] rounded-[20px] p-3 flex flex-col gap-2.5 min-h-[240px]"
+                className={cx("bg-[#E9E6E1] rounded-[20px] p-3 flex-col gap-2.5 md:min-h-[240px]", col === mobileCol ? "flex" : "hidden md:flex")}
               >
                 <div className="flex items-center justify-between px-1.5 py-1">
                   <h2 className="m-0 text-[14px] font-bold flex items-center gap-2">
@@ -230,6 +256,7 @@ function TasksInner() {
                     {total}
                   </span>
                 </div>
+                {list.length === 0 && <p className="md:hidden m-0 py-6 text-center text-[13px] text-muted">{t("common.none")}</p>}
                 {list.map((x) => (
                   <TaskCard key={x.id} task={x} onOpen={() => setForm({ task: x })} onDragStart={() => setDragId(x.id)} />
                 ))}

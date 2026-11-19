@@ -23,13 +23,13 @@ function isActive(path: string, href: string) {
   return href === "/" ? path === "/" : path.startsWith(href);
 }
 
-export function LangToggle({ dark }: { dark?: boolean }) {
+export function LangToggle({ dark, compact }: { dark?: boolean; compact?: boolean }) {
   const { lang, setLang } = useAuth();
   return (
     <div
       role="group"
       aria-label="Language / 界面语言"
-      className={cx("flex p-[3px] rounded-full h-11 box-border", dark ? "bg-[#2C2926]" : "border border-line bg-white")}
+      className={cx("flex p-[3px] rounded-full box-border", compact ? "h-10" : "h-11", dark ? "bg-[#2C2926]" : "border border-line bg-white")}
     >
       {(["zh", "en"] as const).map((l) => (
         <button
@@ -38,7 +38,8 @@ export function LangToggle({ dark }: { dark?: boolean }) {
           aria-pressed={lang === l}
           onClick={() => setLang(l)}
           className={cx(
-            "px-3.5 rounded-full text-[12.5px] font-semibold cursor-pointer",
+            "rounded-full font-semibold cursor-pointer",
+            compact ? "px-2.5 text-[12px]" : "px-3.5 text-[12.5px]",
             lang === l ? (dark ? "bg-white text-ink" : "bg-ink text-white") : dark ? "text-[#C9CAD0]" : "text-muted"
           )}
         >
@@ -49,7 +50,7 @@ export function LangToggle({ dark }: { dark?: boolean }) {
   );
 }
 
-function NotificationBell() {
+function NotificationBell({ dark }: { dark?: boolean }) {
   const { t, lang } = useAuth();
   const { notifications } = useData();
   const { markRead } = useActions();
@@ -74,13 +75,19 @@ function NotificationBell() {
         aria-label={`${t("notif.title")}${unread.length ? ` (${unread.length})` : ""}`}
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
-        className="relative w-11 h-11 rounded-full border border-line bg-white flex items-center justify-center cursor-pointer text-ink"
+        className={cx(
+          "relative rounded-full flex items-center justify-center cursor-pointer",
+          dark ? "w-10 h-10 bg-[#2C2926] text-white" : "w-11 h-11 border border-line bg-white text-ink"
+        )}
       >
         <Icon name="bell" />
         {unread.length > 0 && (
           <span
             aria-hidden="true"
-            className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-brand text-white text-[10px] font-bold flex items-center justify-center ring-2 ring-white"
+            className={cx(
+              "absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-brand text-white text-[10px] font-bold flex items-center justify-center ring-2",
+              dark ? "ring-nav" : "ring-white"
+            )}
           >
             {unread.length > 9 ? "9+" : unread.length}
           </span>
@@ -128,7 +135,7 @@ function NotificationBell() {
 
 export function TopBar() {
   return (
-    <div className="flex items-center gap-2.5">
+    <div className="hidden md:flex items-center gap-2.5">
       <LangToggle />
       <NotificationBell />
     </div>
@@ -242,14 +249,16 @@ export function AppShell({ children }: { children: ReactNode }) {
         </nav>
 
         <div className="flex-1 min-w-0 pb-[96px] md:pb-0 md:bg-paper md:rounded-[26px]">
-          <div className="md:hidden bg-nav text-white px-4 py-3 flex items-center justify-between rounded-b-[24px]">
+          <div className="md:hidden sticky top-0 z-20 bg-nav text-white pl-4 pr-2.5 pt-[max(10px,env(safe-area-inset-top))] pb-2.5 flex items-center gap-2 rounded-b-[22px]">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo-on-dark.png" alt="ABOUND CREATION" className="h-[28px] w-auto" />
-            <button type="button" onClick={() => signOut()} aria-label={t("nav.signOut")} className="w-11 h-11 rounded-full flex items-center justify-center text-[#C9C4BD] cursor-pointer">
-              <Icon name="logout" />
+            <img src="/logo-on-dark.png" alt="ABOUND CREATION" className="h-[24px] w-auto mr-auto" />
+            <LangToggle dark compact />
+            <NotificationBell dark />
+            <button type="button" onClick={() => signOut()} aria-label={t("nav.signOut")} className="w-10 h-10 rounded-full flex items-center justify-center text-[#C9C4BD] cursor-pointer">
+              <Icon name="logout" size={18} />
             </button>
           </div>
-          <main className="px-4 sm:px-6 lg:px-7 pt-5 pb-10 flex flex-col gap-5 max-w-[1600px]">
+          <main className="px-4 sm:px-6 lg:px-7 pt-4 md:pt-5 pb-10 flex flex-col gap-4 md:gap-5 max-w-[1600px]">
             {loaded ? children : <div className="text-[14px] text-muted py-10">{t("common.loading")}</div>}
           </main>
         </div>
@@ -257,7 +266,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <nav
         aria-label="Mobile"
-        className="md:hidden fixed bottom-3 inset-x-3 z-20 grid bg-nav rounded-[26px] p-1.5 shadow-[0_10px_30px_rgba(0,0,0,.25)]"
+        className="md:hidden fixed bottom-[max(12px,env(safe-area-inset-bottom))] inset-x-3 z-20 grid bg-nav rounded-[24px] p-1.5 shadow-[0_10px_30px_rgba(0,0,0,.25)]"
         style={{ gridTemplateColumns: `repeat(${mobileItems.length}, minmax(0, 1fr))` }}
       >
         {mobileItems.map((n) => {
@@ -268,7 +277,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               href={n.href}
               aria-current={active ? "page" : undefined}
               className={cx(
-                "min-h-[54px] rounded-[20px] flex flex-col items-center justify-center gap-1 no-underline text-[10.5px] font-medium",
+                "min-h-[50px] rounded-[18px] flex flex-col items-center justify-center gap-0.5 no-underline text-[10.5px] font-medium",
                 active ? "bg-brand text-white" : "text-[#A39D95] hover:text-white"
               )}
             >

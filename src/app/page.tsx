@@ -90,8 +90,8 @@ export default function Dashboard() {
 
       <div className="grid gap-4 grid-cols-1 lg:grid-cols-2 xl:grid-cols-[300px_minmax(0,1fr)_300px] items-start">
         {/* 第一栏 */}
-        <div className="flex flex-col gap-4 min-w-0">
-          <section className="rounded-[24px] bg-brand shadow-brand p-1.5 flex flex-col">
+        <div className="max-md:contents flex flex-col gap-4 min-w-0">
+          <section className="max-md:order-1 rounded-[24px] bg-brand shadow-brand p-1.5 flex flex-col">
             <div className="flex justify-between items-start gap-3 px-3 pt-3 pb-3.5">
               <div className="flex flex-col gap-0.5">
                 <h2 className="m-0 text-[15px] font-semibold text-white">{t("dash.todayWork")}</h2>
@@ -129,7 +129,7 @@ export default function Dashboard() {
           </section>
 
           {isAdmin && (
-            <Card className="flex flex-col gap-4">
+            <Card className="max-md:order-7 flex flex-col gap-4">
               <SectionTitle aside={<span className="text-[12px] text-muted">{t("dash.workloadSub")}</span>}>{t("dash.workload")}</SectionTitle>
               {load.map(({ m, n }) => (
                 <div key={m.email} className="flex items-center gap-3">
@@ -147,7 +147,7 @@ export default function Dashboard() {
           )}
 
           {revisions.length > 0 && (
-            <Card className="flex flex-col gap-3">
+            <Card className="max-md:order-3 flex flex-col gap-3">
               <SectionTitle aside={<Pill bg="#FCE8E6" fg="#B3261E" round>{t("dash.revisionsCount", { n: revisions.length })}</Pill>}>
                 {t("dash.revisions")}
               </SectionTitle>
@@ -177,7 +177,7 @@ export default function Dashboard() {
         </div>
 
         {/* 第二栏：优先处理 */}
-        <Card className="!p-0 flex flex-col overflow-hidden min-w-0 lg:row-span-2 xl:row-span-1">
+        <Card className="max-md:order-2 !p-0 flex flex-col overflow-hidden min-w-0 lg:row-span-2 xl:row-span-1">
           <div className="flex flex-wrap justify-between items-start gap-3 px-5 pt-5 pb-3.5">
             <div className="flex flex-col gap-0.5">
               <h2 className="m-0 text-[15px] font-semibold">{t("dash.myTasks")}</h2>
@@ -228,9 +228,9 @@ export default function Dashboard() {
         </Card>
 
         {/* 第三栏 */}
-        <div className="flex flex-col gap-4 min-w-0">
+        <div className="max-md:contents flex flex-col gap-4 min-w-0">
           {isAdmin && (
-            <Card className="flex flex-col gap-4">
+            <Card className="max-md:order-6 flex flex-col gap-4">
               <SectionTitle aside={<Link href="/projects" className="text-[12px] font-semibold text-muted no-underline">{t("common.viewAll")}</Link>}>
                 {t("dash.progress")}
               </SectionTitle>
@@ -261,7 +261,7 @@ export default function Dashboard() {
           )}
 
           {isAdmin && alerts.length > 0 && (
-            <Card className="flex flex-col gap-3">
+            <Card className="max-md:order-4 flex flex-col gap-3">
               <SectionTitle>{t("dash.alerts")}</SectionTitle>
               {alerts.slice(0, 6).map((a) => {
                 const left = daysBetween(today, a.date);
@@ -284,7 +284,7 @@ export default function Dashboard() {
             </Card>
           )}
 
-          <Card className="flex flex-col gap-3">
+          <Card className="max-md:order-5 flex flex-col gap-3">
             <SectionTitle>{t("dash.events")}</SectionTitle>
             {upcoming.length === 0 && <EmptyState>{t("common.none")}</EmptyState>}
             {upcoming.map((e) => (

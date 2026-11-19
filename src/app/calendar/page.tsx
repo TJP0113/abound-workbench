@@ -26,8 +26,8 @@ function Chip({ item, onOpen, compact }: { item: CalItem; onOpen: (i: CalItem) =
       }}
       title={item.title}
       className={cx(
-        "w-full text-left rounded-md px-1.5 py-1 leading-snug cursor-pointer overflow-hidden text-ellipsis",
-        compact ? "text-[12px] whitespace-nowrap" : "text-[13px]"
+        "w-full text-left leading-snug cursor-pointer overflow-hidden text-ellipsis",
+        compact ? "rounded-md px-1.5 py-1 text-[12px] whitespace-nowrap" : "rounded-[12px] px-3 py-2.5 text-[13.5px]"
       )}
       style={{ background: c.bg, color: c.fg, fontWeight: item.type === "delivery" ? 700 : 500 }}
     >
@@ -49,6 +49,7 @@ export default function CalendarPage() {
   const [scope, setScope] = useState<"mine" | "all">("all");
   const [form, setForm] = useState<{ event?: CalEvent; date?: string } | null>(null);
   const [syncing, setSyncing] = useState(false);
+  const [selDay, setSelDay] = useState(today); // 手机月视图：点选的日期
 
   const items = useMemo(() => {
     const all = buildCalendarItems(projects, tasks, events, lang);
@@ -99,12 +100,12 @@ export default function CalendarPage() {
         }
       />
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-1.5">
+      <div className="flex flex-wrap items-center justify-between gap-2.5 md:gap-3">
+        <div className="flex items-center gap-1.5 w-full md:w-auto">
           <Button size="sm" aria-label={t("cal.prev")} onClick={() => step(-1)} className="!px-2.5">
             <Icon name="left" size={16} />
           </Button>
-          <span className="text-[18px] font-bold px-2 min-w-[150px] text-center">{title}</span>
+          <span className="flex-1 md:flex-none text-[16px] md:text-[18px] font-bold px-1 md:px-2 md:min-w-[150px] text-center whitespace-nowrap">{title}</span>
           <Button size="sm" aria-label={t("cal.next")} onClick={() => step(1)} className="!px-2.5">
             <Icon name="right" size={16} />
           </Button>
@@ -113,21 +114,13 @@ export default function CalendarPage() {
             onClick={() => {
               setMonth(monthStr());
               setWeek(weekStart(today));
+              setSelDay(today);
             }}
           >
             {t("common.today")}
           </Button>
         </div>
-        <div className="flex flex-wrap items-center gap-2.5">
-          <span className={cx("text-[12px]", gcal?.connected ? "text-ok" : "text-faint")}>
-            ● {gcal?.connected ? t("cal.synced", { time: formatDateTime(gcal.lastSync ?? undefined, lang) }) : t("cal.notSynced")}
-          </span>
-          {gcal?.connected && (
-            <Button size="sm" variant="ghost" onClick={syncNow} disabled={syncing}>
-              <Icon name="sync" size={15} />
-              {syncing ? t("cal.syncing") : t("cal.syncNow")}
-            </Button>
-          )}
+        <div className="flex flex-wrap items-center gap-2 md:gap-2.5">
           <Segmented
             label={t("cal.title")}
             value={view}
@@ -149,17 +142,88 @@ export default function CalendarPage() {
         </div>
       </div>
 
-      <ul aria-label="Legend" className="list-none m-0 p-0 flex flex-wrap gap-4 text-[13px] text-ink-2">
-        {LEGEND.map((k) => (
-          <li key={k} className="flex items-center gap-2">
-            <span aria-hidden="true" className="w-3 h-3 rounded-[3px]" style={{ background: EVENT_COLORS[k].solid }} />
-            {t(`evt.${k}`)}
-          </li>
-        ))}
-      </ul>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 -mt-1">
+        <span className={cx("text-[12px]", gcal?.connected ? "text-ok" : "text-faint")}>
+          ● {gcal?.connected ? t("cal.synced", { time: formatDateTime(gcal.lastSync ?? undefined, lang) }) : t("cal.notSynced")}
+        </span>
+        {gcal?.connected && (
+          <button type="button" onClick={syncNow} disabled={syncing} className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-ink-2 cursor-pointer disabled:opacity-50">
+            <Icon name="sync" size={14} />
+            {syncing ? t("cal.syncing") : t("cal.syncNow")}
+          </button>
+        )}
+        <ul aria-label="Legend" className="list-none m-0 p-0 flex flex-wrap gap-x-3.5 gap-y-1.5 text-[12px] text-ink-2 md:ml-auto">
+          {LEGEND.map((k) => (
+            <li key={k} className="flex items-center gap-1.5">
+              <span aria-hidden="true" className="w-2.5 h-2.5 rounded-full" style={{ background: EVENT_COLORS[k].solid }} />
+              {t(`evt.${k}`)}
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {view === "month" && (
+        <div className="md:hidden flex flex-col gap-3">
+          <div className="bg-card rounded-[22px] p-2">
+            <div className="grid grid-cols-7">
+              {weekdays.map((w) => (
+                <div key={w} className="py-1.5 text-center text-[11px] font-medium text-muted">
+                  {w.replace("周", "")}
+                </div>
+              ))}
+            </div>
+            <div className="grid grid-cols-7 gap-y-0.5">
+              {days.map((d) => {
+                const inMonth = d.startsWith(month);
+                const list = itemsOnDay(items, d);
+                const types = Array.from(new Set(list.map((x) => x.type))).slice(0, 3);
+                const sel = d === selDay;
+                const isToday = d === today;
+                return (
+                  <button
+                    key={d}
+                    type="button"
+                    onClick={() => setSelDay(d)}
+                    aria-pressed={sel}
+                    aria-label={`${formatDate(d, lang)}${list.length ? ` · ${list.length}` : ""}`}
+                    className={cx(
+                      "h-[52px] rounded-[14px] flex flex-col items-center justify-center gap-1 cursor-pointer",
+                      sel ? "bg-brand text-white" : isToday ? "bg-accent-soft" : ""
+                    )}
+                  >
+                    <span className={cx("text-[15px] font-semibold leading-none", !sel && (isToday ? "text-accent-dark" : inMonth ? "text-ink" : "text-[#B5AFA7]"))}>
+                      {Number(d.slice(8))}
+                    </span>
+                    <span className="flex gap-[3px] h-[5px]">
+                      {types.map((ty) => (
+                        <span key={ty} className="w-[5px] h-[5px] rounded-full" style={{ background: sel ? "#fff" : EVENT_COLORS[ty].solid }} />
+                      ))}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <section className="bg-card rounded-[22px] p-4 flex flex-col gap-2.5">
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="m-0 text-[15px] font-semibold">
+                {formatDate(selDay, lang)} {weekdayShort(selDay, lang)}
+              </h2>
+              <Button size="sm" onClick={() => setForm({ date: selDay })}>
+                <Icon name="plus" size={14} />
+                {t("cal.new")}
+              </Button>
+            </div>
+            {itemsOnDay(items, selDay).length === 0 && <p className="m-0 py-3 text-[13px] text-muted">{t("common.none")}</p>}
+            {itemsOnDay(items, selDay).map((it) => (
+              <Chip key={it.key} item={it} onOpen={open} />
+            ))}
+          </section>
+        </div>
+      )}
 
       {view === "month" ? (
-        <div className="overflow-x-auto bg-card rounded-[24px]">
+        <div className="hidden md:block overflow-x-auto bg-card rounded-[24px]">
           <div className="min-w-[860px]">
             <div className="grid grid-cols-7 border-b border-[#EAEAE5]">
               {weekdays.map((w) => (
@@ -224,7 +288,7 @@ export default function CalendarPage() {
             return (
               <section
                 key={d}
-                className={cx("bg-card border rounded-[20px] p-3 flex flex-col gap-2 min-h-[120px] md:min-h-[420px]", d === today ? "border-accent" : "border-line")}
+                className={cx("bg-card border rounded-[20px] p-3 flex flex-col gap-2 md:min-h-[420px]", d === today ? "border-accent" : "border-transparent")}
               >
                 <button type="button" onClick={() => setForm({ date: d })} className="flex items-baseline justify-between cursor-pointer text-left">
                   <span className="text-[12px] text-muted">{weekdayShort(d, lang)}</span>
@@ -241,7 +305,7 @@ export default function CalendarPage() {
         </div>
       )}
 
-      <p className="m-0 text-[12px] text-faint">{t("cal.hint")}</p>
+      <p className="hidden md:block m-0 text-[12px] text-faint">{t("cal.hint")}</p>
 
       {form && <EventForm open event={form.event} date={form.date} onClose={() => setForm(null)} />}
     </>
